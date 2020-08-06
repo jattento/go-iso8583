@@ -1,4 +1,4 @@
-package field
+package iso8583
 
 // LLLVAR: For use of different encoding for 'LLL' and 'VAR' separate both encodings with a slash,
 // where first element is the lll encoding and the second the var encoding.

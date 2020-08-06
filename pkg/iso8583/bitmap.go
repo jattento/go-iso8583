@@ -1,4 +1,4 @@
-package field
+package iso8583
 
 import (
 	"math"

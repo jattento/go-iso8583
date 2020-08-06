@@ -25,28 +25,25 @@ import "github.com/jattento/go-iso8583/pkg/iso8583"
 ## Quick start
 
 ```go
-import (
-	"github.com/go-iso8583/pkg/field"
-	"github.com/go-iso8583/pkg/iso8583"
-)
+import "github.com/go-iso8583/pkg/iso8583"
 
 type PurchaseRequest struct {
-	MTI                    field.MTI    `iso8583:"mti"`
-	FirstBitmap            field.BITMAP `iso8583:"bitmap,length:64"` // length is the maximum amount of represented elements.
-	SecondBitmap           field.BITMAP `iso8583:"1,length:64"`      // length is the maximum amount of represented elements.
-	PAN                    field.LLVAR  `iso8583:"2"`
-	ProcessingCode         field.VAR    `iso8583:"3"`
-	Amount                 field.VAR    `iso8583:"4,encoding:ebcdic"` // By default ASCII is assumed but dont limit yourself!
-	DateTime               field.VAR    `iso8583:"7"`
-	SystemTraceAuditNumber field.VAR    `iso8583:"11,omitempty"` // omitempty is supported!
-	LocalTransactionTime   field.VAR    `iso8583:"12"`
-	LocalTransactionDate   field.VAR    `iso8583:"-"` // You can explicitly ignore a field.
-	ExpirationDate         field.VAR    `iso8583:"14"`
-	MerchantType           field.VAR    `iso8583:"18"`
-	ICC                    field.LLLVAR `iso8583:"55"`
-	SettlementCode         field.VAR    `iso8583:"66"`
-	MessageNumber          field.VAR    `iso8583:"71"`
-	TransactionDescriptor  field.VAR    `iso8583:"104"`
+	MTI                    iso8583.MTI    `iso8583:"mti"`
+	FirstBitmap            iso8583.BITMAP `iso8583:"bitmap,length:64"` // length is the maximum amount of represented elements.
+	SecondBitmap           iso8583.BITMAP `iso8583:"1,length:64"`      // length is the maximum amount of represented elements.
+	PAN                    iso8583.LLVAR  `iso8583:"2"`
+	ProcessingCode         iso8583.VAR    `iso8583:"3"`
+	Amount                 iso8583.VAR    `iso8583:"4,encoding:ebcdic"` // By default ASCII is assumed but dont limit yourself!
+	DateTime               iso8583.VAR    `iso8583:"7"`
+	SystemTraceAuditNumber iso8583.VAR    `iso8583:"11,omitempty"` // omitempty is supported!
+	LocalTransactionTime   iso8583.VAR    `iso8583:"12"`
+	LocalTransactionDate   iso8583.VAR    `iso8583:"-"` // You can explicitly ignore a field.
+	ExpirationDate         iso8583.VAR    `iso8583:"14"`
+	MerchantType           iso8583.VAR    `iso8583:"18"`
+	ICC                    iso8583.LLLVAR `iso8583:"55"`
+	SettlementCode         iso8583.VAR    `iso8583:"66"`
+	MessageNumber          iso8583.VAR    `iso8583:"71"`
+	TransactionDescriptor  iso8583.VAR    `iso8583:"104"`
 }
 
 func GenerateStaticReqBytes() ([]byte, error) {
@@ -70,29 +67,26 @@ func GenerateStaticReqBytes() ([]byte, error) {
 ```
 
 ```go
-import (
-	"github.com/go-iso8583/pkg/field"
-	"github.com/go-iso8583/pkg/iso8583"
-)
+import "github.com/go-iso8583/pkg/iso8583"
 
 type PurchaseResponse struct {
-	MTI                    field.MTI    `iso8583:"mti,length:4"`
-	FirstBitmap            field.BITMAP `iso8583:"bitmap,length:64"` // length is the maximum amount of represented elements.
-	SecondBitmap           field.BITMAP `iso8583:"1,length:64"`      // length is the maximum amount of represented elements.
-	PAN                    field.LLVAR  `iso8583:"2,length:2"`       // length is the amount of bytes of the LL part.
-	ProcessingCode         field.VAR    `iso8583:"3,length:6"`
-	Amount                 field.VAR    `iso8583:"4,length:12"`
-	DateTime               field.VAR    `iso8583:"7,length:10"`
-	SystemTraceAuditNumber field.VAR    `iso8583:"11,length:6"`
-	LocalTransactionTime   field.VAR    `iso8583:"12,length:6"`
-	LocalTransactionDate   field.VAR    `iso8583:"13,length:4"`
-	ExpirationDate         field.VAR    `iso8583:"14,length:4"`
-	MerchantType           field.VAR    `iso8583:"18,length:4"`
-	ResponseCode           field.VAR    `iso8583:"39,length:2"`
-	ICC                    field.LLLVAR `iso8583:"55,length:3,encoding:ebcdic/ascii"` // LLL and VAR part use different encoding? Use a / to indicate both
-	SettlementCode         field.VAR    `iso8583:"66,length:1"`
-	MessageNumber          field.VAR    `iso8583:"71,length:4"`
-	TransactionDescriptor  field.VAR    `iso8583:"104,length:100"`
+	MTI                    iso8583.MTI    `iso8583:"mti,length:4"`
+	FirstBitmap            iso8583.BITMAP `iso8583:"bitmap,length:64"` // length is the maximum amount of represented elements.
+	SecondBitmap           iso8583.BITMAP `iso8583:"1,length:64"`      // length is the maximum amount of represented elements.
+	PAN                    iso8583.LLVAR  `iso8583:"2,length:2"`       // length is the amount of bytes of the LL part.
+	ProcessingCode         iso8583.VAR    `iso8583:"3,length:6"`
+	Amount                 iso8583.VAR    `iso8583:"4,length:12"`
+	DateTime               iso8583.VAR    `iso8583:"7,length:10"`
+	SystemTraceAuditNumber iso8583.VAR    `iso8583:"11,length:6"`
+	LocalTransactionTime   iso8583.VAR    `iso8583:"12,length:6"`
+	LocalTransactionDate   iso8583.VAR    `iso8583:"13,length:4"`
+	ExpirationDate         iso8583.VAR    `iso8583:"14,length:4"`
+	MerchantType           iso8583.VAR    `iso8583:"18,length:4"`
+	ResponseCode           iso8583.VAR    `iso8583:"39,length:2"`
+	ICC                    iso8583.LLLVAR `iso8583:"55,length:3,encoding:ebcdic/ascii"` // LLL and VAR part use different encoding? Use a / to indicate both
+	SettlementCode         iso8583.VAR    `iso8583:"66,length:1"`
+	MessageNumber          iso8583.VAR    `iso8583:"71,length:4"`
+	TransactionDescriptor  iso8583.VAR    `iso8583:"104,length:100"`
 }
 
 func ReadResp(byt []byte) (PurchaseResponse,error){

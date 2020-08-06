@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/jattento/go-iso8583/pkg/bitmap"
-	"github.com/jattento/go-iso8583/pkg/field"
 	"github.com/jattento/go-iso8583/pkg/iso8583"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,7 @@ import (
 
 // TODO Nil field test case
 func TestMarshal(t *testing.T) {
-	exampleString := field.VAR("1234")
+	exampleString := iso8583.VAR("1234")
 	testList := []struct {
 		Name        string
 		Run         bool
@@ -25,7 +24,7 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field",
 			Run:  true,
 			Input: struct {
-				Field1 field.VAR `iso8583:"1"`
+				Field1 iso8583.VAR `iso8583:"1"`
 			}{
 				Field1: "1234",
 			},
@@ -48,7 +47,7 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_nil",
 			Run:  true,
 			Input: struct {
-				Field1 *field.VAR `iso8583:"1"`
+				Field1 *iso8583.VAR `iso8583:"1"`
 			}{
 				Field1: nil,
 			},
@@ -59,8 +58,8 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_one_denied",
 			Run:  true,
 			Input: struct {
-				Field1 field.VAR `iso8583:"1"`
-				Field2 field.VAR `iso8583:"-"`
+				Field1 iso8583.VAR `iso8583:"1"`
+				Field2 iso8583.VAR `iso8583:"-"`
 			}{
 				Field1: "1234",
 				Field2: "1234",
@@ -72,11 +71,11 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_one_private_one_anonymous_one_without_tag_one_omitempty",
 			Run:  true,
 			Input: struct {
-				Field1    field.VAR `iso8583:"1"`
-				field.VAR `iso8583:"2"`
-				field3    field.VAR `iso8583:"3"`
-				Field4    field.VAR
-				Field5    field.VAR `iso8583:"5,omitempty"`
+				Field1    iso8583.VAR `iso8583:"1"`
+				iso8583.VAR `iso8583:"2"`
+				field3    iso8583.VAR `iso8583:"3"`
+				Field4    iso8583.VAR
+				Field5    iso8583.VAR `iso8583:"5,omitempty"`
 			}{
 				Field1: "1234",
 				VAR:    "1234",
@@ -91,9 +90,9 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_three_field",
 			Run:  true,
 			Input: struct {
-				Field3 field.VAR `iso8583:"3"`
-				Field1 field.VAR `iso8583:"1"`
-				Field2 field.VAR `iso8583:"2"`
+				Field3 iso8583.VAR `iso8583:"3"`
+				Field1 iso8583.VAR `iso8583:"1"`
+				Field2 iso8583.VAR `iso8583:"2"`
 			}{
 				Field1: "1234",
 				Field2: "1234",
@@ -106,7 +105,7 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_pointer",
 			Run:  true,
 			Input: &struct {
-				Field1 *field.VAR `iso8583:"1"`
+				Field1 *iso8583.VAR `iso8583:"1"`
 			}{
 				Field1: &exampleString,
 			},
@@ -118,8 +117,8 @@ func TestMarshal(t *testing.T) {
 			Run:  true,
 			Input: struct {
 				Bitmap BMAPWithoutMarshalerBitmap `iso8583:"bitmap"`
-				MTI    field.VAR                  `iso8583:"mti"`
-				Field1 field.VAR                  `iso8583:"1"`
+				MTI    iso8583.VAR                  `iso8583:"mti"`
+				Field1 iso8583.VAR                  `iso8583:"1"`
 			}{
 				MTI:    "1000",
 				Bitmap: BMAPWithoutMarshalerBitmap{Bitmap: bitmap.FromBytes([]byte{126})},
@@ -132,10 +131,10 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_marhsaler_bitmap",
 			Run:  true,
 			Input: struct {
-				Bitmap field.BITMAP `iso8583:"bitmap,length:64"`
-				MTI    field.VAR    `iso8583:"mti"`
-				Field1 field.VAR    `iso8583:"1"`
-				Field2 field.VAR    `iso8583:"2"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				MTI    iso8583.VAR    `iso8583:"mti"`
+				Field1 iso8583.VAR    `iso8583:"1"`
+				Field2 iso8583.VAR    `iso8583:"2"`
 			}{
 				MTI:    "1000",
 				Field1: "12345",
@@ -148,11 +147,11 @@ func TestMarshal(t *testing.T) {
 			Name: "two_marhsaler_bitmap",
 			Run:  true,
 			Input: struct {
-				Bitmap  field.BITMAP `iso8583:"bitmap,length:64"`
-				MTI     field.VAR    `iso8583:"mti"`
-				Field1  field.BITMAP `iso8583:"1,length:64"`
-				Field2  field.VAR    `iso8583:"2"`
-				Field66 field.VAR    `iso8583:"66"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				MTI     iso8583.VAR    `iso8583:"mti"`
+				Field1  iso8583.BITMAP `iso8583:"1,length:64"`
+				Field2  iso8583.VAR    `iso8583:"2"`
+				Field66 iso8583.VAR    `iso8583:"66"`
 			}{
 				MTI:     "1000",
 				Field2:  "123",
@@ -167,16 +166,16 @@ func TestMarshal(t *testing.T) {
 			Name: "three_marhsaler_bitmap",
 			Run:  true,
 			Input: struct {
-				Bitmap   field.BITMAP `iso8583:"bitmap,length:64"`
-				MTI      field.VAR    `iso8583:"mti"`
-				Field1   field.BITMAP `iso8583:"1,length:64"`
-				Field2   field.VAR    `iso8583:"2"`
-				Field32  field.VAR    `iso8583:"32"`
-				Field64  field.VAR    `iso8583:"64"`
-				Field65  field.BITMAP `iso8583:"65,length:64"`
-				Field66  field.VAR    `iso8583:"66"`
-				Field130 field.VAR    `iso8583:"130"`
-				Field192 field.VAR    `iso8583:"192"`
+				Bitmap   iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				MTI      iso8583.VAR    `iso8583:"mti"`
+				Field1   iso8583.BITMAP `iso8583:"1,length:64"`
+				Field2   iso8583.VAR    `iso8583:"2"`
+				Field32  iso8583.VAR    `iso8583:"32"`
+				Field64  iso8583.VAR    `iso8583:"64"`
+				Field65  iso8583.BITMAP `iso8583:"65,length:64"`
+				Field66  iso8583.VAR    `iso8583:"66"`
+				Field130 iso8583.VAR    `iso8583:"130"`
+				Field192 iso8583.VAR    `iso8583:"192"`
 			}{
 				MTI:      "1000",
 				Field2:   "11",
@@ -197,20 +196,20 @@ func TestMarshal(t *testing.T) {
 			Name: "four_marhsaler_bitmap_third_with_half_length",
 			Run:  true,
 			Input: struct {
-				Bitmap   field.BITMAP `iso8583:"bitmap,length:64"`
-				MTI      field.VAR    `iso8583:"mti"`
-				Field1   field.BITMAP `iso8583:"1,length:64"`
-				Field2   field.VAR    `iso8583:"2"`
-				Field32  field.VAR    `iso8583:"32"`
-				Field64  field.VAR    `iso8583:"64"`
-				Field65  field.BITMAP `iso8583:"65,length:32"`
-				Field66  field.VAR    `iso8583:"66"`
-				Field96  field.VAR    `iso8583:"96"`
-				Field129 field.BITMAP `iso8583:"129,length:64"`
-				Field160 field.VAR    `iso8583:"160"`
-				Field162 field.VAR    `iso8583:"162"`
-				Field192 field.VAR    `iso8583:"192"`
-				Field224 field.VAR    `iso8583:"224"`
+				Bitmap   iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				MTI      iso8583.VAR    `iso8583:"mti"`
+				Field1   iso8583.BITMAP `iso8583:"1,length:64"`
+				Field2   iso8583.VAR    `iso8583:"2"`
+				Field32  iso8583.VAR    `iso8583:"32"`
+				Field64  iso8583.VAR    `iso8583:"64"`
+				Field65  iso8583.BITMAP `iso8583:"65,length:32"`
+				Field66  iso8583.VAR    `iso8583:"66"`
+				Field96  iso8583.VAR    `iso8583:"96"`
+				Field129 iso8583.BITMAP `iso8583:"129,length:64"`
+				Field160 iso8583.VAR    `iso8583:"160"`
+				Field162 iso8583.VAR    `iso8583:"162"`
+				Field192 iso8583.VAR    `iso8583:"192"`
+				Field224 iso8583.VAR    `iso8583:"224"`
 			}{
 				MTI:      "1000",
 				Field2:   "11",
@@ -236,23 +235,23 @@ func TestMarshal(t *testing.T) {
 			Name: "example_1", //TODO BITMAP AUTO LENGTH 64
 			Run:  true,
 			Input: struct {
-				FirstBitmap           field.BITMAP `iso8583:"bitmap,length:64"`
-				SecondBitmap          field.BITMAP `iso8583:"1,length:64"`
-				PAN                   field.LLVAR  `iso8583:"2"`
-				ProcessingCode        field.VAR    `iso8583:"3"`
-				Amount                field.VAR    `iso8583:"4"`
-				ICC                   field.LLLVAR `iso8583:"55"`
-				SettlementCode        field.VAR    `iso8583:"66"`
-				MessageNumber         field.VAR    `iso8583:"71"`
-				TransactionDescriptor field.VAR    `iso8583:"104"`
+				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
+				PAN                   iso8583.LLVAR  `iso8583:"2"`
+				ProcessingCode        iso8583.VAR    `iso8583:"3"`
+				Amount                iso8583.VAR    `iso8583:"4"`
+				ICC                   iso8583.LLLVAR `iso8583:"55"`
+				SettlementCode        iso8583.VAR    `iso8583:"66"`
+				MessageNumber         iso8583.VAR    `iso8583:"71"`
+				TransactionDescriptor iso8583.VAR    `iso8583:"104"`
 			}{
-				PAN:                   field.LLVAR("1234567891234567"),
-				ProcessingCode:        field.VAR("1000"),
-				Amount:                field.VAR("0001000"),
-				ICC:                   field.LLLVAR("ABCDEFGH123456789"),
-				SettlementCode:        field.VAR("8"),
-				MessageNumber:         field.VAR("1"),
-				TransactionDescriptor: field.VAR("JUST A PURCHASE"),
+				PAN:                   iso8583.LLVAR("1234567891234567"),
+				ProcessingCode:        iso8583.VAR("1000"),
+				Amount:                iso8583.VAR("0001000"),
+				ICC:                   iso8583.LLLVAR("ABCDEFGH123456789"),
+				SettlementCode:        iso8583.VAR("8"),
+				MessageNumber:         iso8583.VAR("1"),
+				TransactionDescriptor: iso8583.VAR("JUST A PURCHASE"),
 			},
 			OutputError: "",
 			OutputBytes: appendBytes(
@@ -272,7 +271,7 @@ func TestMarshal(t *testing.T) {
 			Name: "error_0_field",
 			Run:  true,
 			Input: struct {
-				Field0 field.VAR `iso8583:"0"`
+				Field0 iso8583.VAR `iso8583:"0"`
 			}{
 				Field0: "12345",
 			},
@@ -283,8 +282,8 @@ func TestMarshal(t *testing.T) {
 			Name: "error_duplicated_field",
 			Run:  true,
 			Input: struct {
-				Field1  field.VAR `iso8583:"1"`
-				Field01 field.VAR `iso8583:"1"`
+				Field1  iso8583.VAR `iso8583:"1"`
+				Field01 iso8583.VAR `iso8583:"1"`
 			}{
 				Field1:  "12345",
 				Field01: "12345",
@@ -303,7 +302,7 @@ func TestMarshal(t *testing.T) {
 			Name: "error_unrecognized_field",
 			Run:  true,
 			Input: struct {
-				Field1 field.VAR `iso8583:"asd"`
+				Field1 iso8583.VAR `iso8583:"asd"`
 			}{
 				Field1: "1234",
 			},

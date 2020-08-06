@@ -1,11 +1,11 @@
-package field_test
+package iso8583_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/jattento/go-iso8583/pkg/field"
-	"github.com/jattento/go-iso8583/pkg/field/encoding/ebcdic"
+	"github.com/jattento/go-iso8583/pkg/encoding/ebcdic"
+	"github.com/jattento/go-iso8583/pkg/iso8583"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +13,7 @@ import (
 func TestLLVAR_MarshalISO8583(t *testing.T) {
 	testList := []struct {
 		Name        string
-		V           field.LLVAR
+		V           iso8583.LLVAR
 		Encoding    string
 		Length      int
 		OutputBytes []byte
@@ -82,7 +82,7 @@ func TestLLVAR_UnmarshalISO8583(t *testing.T) {
 
 	for _, testCase := range testList {
 		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {
-			var v field.LLVAR
+			var v iso8583.LLVAR
 
 			n, err := v.UnmarshalISO8583(testCase.InputBytes, testCase.InputLength, testCase.InputEncoding)
 			if testCase.OutputError != "" {
