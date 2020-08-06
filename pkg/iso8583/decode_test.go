@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/jattento/go-iso8583/pkg/bitmap"
-	"github.com/jattento/go-iso8583/pkg/field"
 	"github.com/jattento/go-iso8583/pkg/iso8583"
 
 	"github.com/stretchr/testify/assert"
@@ -29,18 +28,18 @@ func TestUnmarshal(t *testing.T) {
 			ExpectedRemaining: 0,
 			InputByte:         append([]byte("1000"), append(bitmap.ToBytes(map[int]bool{1: false, 2: true, 64: false}), []byte("asd")...)...),
 			InputStruct: &struct {
-				Mti    field.VAR    `iso8583:"mti,length:4"`
-				Bitmap field.BITMAP `iso8583:"bitmap,length:64"`
-				Field2 field.VAR    `iso8583:"2,length:3"`
+				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 			}{},
 			ExpectedOutputError: "",
 			ExpectedOutputStruct: struct {
-				Mti    field.VAR    `iso8583:"mti,length:4"`
-				Bitmap field.BITMAP `iso8583:"bitmap,length:64"`
-				Field2 field.VAR    `iso8583:"2,length:3"`
+				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 			}{
 				Field2: "asd",
-				Bitmap: field.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
+				Bitmap: iso8583.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
 				Mti:    "1000",
 			},
 		},
@@ -50,64 +49,64 @@ func TestUnmarshal(t *testing.T) {
 			ExpectedRemaining: 0,
 			InputByte:         append(append([]byte("1000"), append(bitmap.ToBytes(map[int]bool{1: true, 2: true, 64: false}), bitmap.ToBytes(map[int]bool{1: false, 2: true, 64: false})...)...), []byte("asdfgh")...),
 			InputStruct: &struct {
-				Mti     field.VAR    `iso8583:"mti,length:4"`
-				Bitmap  field.BITMAP `iso8583:"bitmap,length:64"`
-				Field1  field.BITMAP `iso8583:"1,length:64"`
-				Field2  field.VAR    `iso8583:"2,length:3"`
-				Field66 field.VAR    `iso8583:"66,length:3"`
+				Mti     iso8583.VAR    `iso8583:"mti,length:4"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1  iso8583.BITMAP `iso8583:"1,length:64"`
+				Field2  iso8583.VAR    `iso8583:"2,length:3"`
+				Field66 iso8583.VAR    `iso8583:"66,length:3"`
 			}{},
 			ExpectedOutputError: "",
 			ExpectedOutputStruct: struct {
-				Mti     field.VAR    `iso8583:"mti,length:4"`
-				Bitmap  field.BITMAP `iso8583:"bitmap,length:64"`
-				Field1  field.BITMAP `iso8583:"1,length:64"`
-				Field2  field.VAR    `iso8583:"2,length:3"`
-				Field66 field.VAR    `iso8583:"66,length:3"`
+				Mti     iso8583.VAR    `iso8583:"mti,length:4"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1  iso8583.BITMAP `iso8583:"1,length:64"`
+				Field2  iso8583.VAR    `iso8583:"2,length:3"`
+				Field66 iso8583.VAR    `iso8583:"66,length:3"`
 			}{
 				Field2:  "asd",
 				Field66: "fgh",
-				Field1:  field.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
-				Bitmap:  field.BITMAP{map[int]bool{1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
+				Field1:  iso8583.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
+				Bitmap:  iso8583.BITMAP{map[int]bool{1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
 				Mti:     "1000",
 			},
 		},
 		{
-			Name: "example_1", //TODO BITMAP AUTO LENGTH 64
+			Name: "example_1",
 			Run:  true,
 			InputStruct: &struct {
-				MTI                   field.MTI    `iso8583:"mti,length:4"`
-				FirstBitmap           field.BITMAP `iso8583:"bitmap,length:64"`
-				SecondBitmap          field.BITMAP `iso8583:"1,length:64"`
-				PAN                   field.LLVAR  `iso8583:"2,length:2"`
-				ProcessingCode        field.VAR    `iso8583:"3,length:4"`
-				Amount                field.VAR    `iso8583:"4,length:7"`
-				ICC                   field.LLLVAR `iso8583:"55,length:3"`
-				SettlementCode        field.VAR    `iso8583:"66,length:1"`
-				MessageNumber         field.VAR    `iso8583:"71,length:1"`
-				TransactionDescriptor field.VAR    `iso8583:"104,length:15"`
+				MTI                   iso8583.MTI    `iso8583:"mti,length:4"`
+				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
+				PAN                   iso8583.LLVAR  `iso8583:"2,length:2"`
+				ProcessingCode        iso8583.VAR    `iso8583:"3,length:4"`
+				Amount                iso8583.VAR    `iso8583:"4,length:7"`
+				ICC                   iso8583.LLLVAR `iso8583:"55,length:3"`
+				SettlementCode        iso8583.VAR    `iso8583:"66,length:1"`
+				MessageNumber         iso8583.VAR    `iso8583:"71,length:1"`
+				TransactionDescriptor iso8583.VAR    `iso8583:"104,length:15"`
 			}{},
 			ExpectedOutputStruct: struct {
-				MTI                   field.MTI    `iso8583:"mti,length:4"`
-				FirstBitmap           field.BITMAP `iso8583:"bitmap,length:64"`
-				SecondBitmap          field.BITMAP `iso8583:"1,length:64"`
-				PAN                   field.LLVAR  `iso8583:"2,length:2"`
-				ProcessingCode        field.VAR    `iso8583:"3,length:4"`
-				Amount                field.VAR    `iso8583:"4,length:7"`
-				ICC                   field.LLLVAR `iso8583:"55,length:3"`
-				SettlementCode        field.VAR    `iso8583:"66,length:1"`
-				MessageNumber         field.VAR    `iso8583:"71,length:1"`
-				TransactionDescriptor field.VAR    `iso8583:"104,length:15"`
+				MTI                   iso8583.MTI    `iso8583:"mti,length:4"`
+				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
+				PAN                   iso8583.LLVAR  `iso8583:"2,length:2"`
+				ProcessingCode        iso8583.VAR    `iso8583:"3,length:4"`
+				Amount                iso8583.VAR    `iso8583:"4,length:7"`
+				ICC                   iso8583.LLLVAR `iso8583:"55,length:3"`
+				SettlementCode        iso8583.VAR    `iso8583:"66,length:1"`
+				MessageNumber         iso8583.VAR    `iso8583:"71,length:1"`
+				TransactionDescriptor iso8583.VAR    `iso8583:"104,length:15"`
 			}{
-				MTI:                   field.MTI("1000"),
-				FirstBitmap:           field.BITMAP{Bitmap: map[int]bool{1: true, 2: true, 3: true, 4: true, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: true, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
-				SecondBitmap:          field.BITMAP{Bitmap: map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: true, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: true, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
-				PAN:                   field.LLVAR("1234567891234567"),
-				ProcessingCode:        field.VAR("1000"),
-				Amount:                field.VAR("0001000"),
-				ICC:                   field.LLLVAR("ABCDEFGH123456789"),
-				SettlementCode:        field.VAR("8"),
-				MessageNumber:         field.VAR("1"),
-				TransactionDescriptor: field.VAR("JUST A PURCHASE"),
+				MTI:                   iso8583.MTI("1000"),
+				FirstBitmap:           iso8583.BITMAP{Bitmap: map[int]bool{1: true, 2: true, 3: true, 4: true, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: false, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: true, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
+				SecondBitmap:          iso8583.BITMAP{Bitmap: map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false, 7: true, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false, 16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false, 25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false, 34: false, 35: false, 36: false, 37: false, 38: false, 39: false, 40: true, 41: false, 42: false, 43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
+				PAN:                   iso8583.LLVAR("1234567891234567"),
+				ProcessingCode:        iso8583.VAR("1000"),
+				Amount:                iso8583.VAR("0001000"),
+				ICC:                   iso8583.LLLVAR("ABCDEFGH123456789"),
+				SettlementCode:        iso8583.VAR("8"),
+				MessageNumber:         iso8583.VAR("1"),
+				TransactionDescriptor: iso8583.VAR("JUST A PURCHASE"),
 			},
 			ExpectedOutputError: "",
 			InputByte: appendBytes(

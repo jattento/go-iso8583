@@ -1,15 +1,15 @@
-package encoding
+package iso8583
 
 import (
-	"github.com/jattento/go-iso8583/pkg/field/encoding/ebcdic"
+	"github.com/jattento/go-iso8583/pkg/encoding/ebcdic"
 )
 
-var Unmarshal = map[string]func([]byte) ([]byte, error){
+var UnmarshalDecodings = map[string]func([]byte) ([]byte, error){
 	"ebcdic": errWrapper(ebcdic.Decode),
 	"ascii":  nop,
 }
 
-var Marshal = map[string]func([]byte) ([]byte, error){
+var MarshalEncodings = map[string]func([]byte) ([]byte, error){
 	"ebcdic": errWrapper(ebcdic.Encode),
 	"ascii":  nop,
 }

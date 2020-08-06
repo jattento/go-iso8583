@@ -1,4 +1,4 @@
-package field
+package iso8583
 
 import (
 	"math"
@@ -31,6 +31,7 @@ func (b BITMAP) Bits() (map[int]bool, error) {
 	return b.Bitmap, nil
 }
 
+// MarshalISO8583Bitmap
 func (b BITMAP) MarshalISO8583Bitmap(m map[int]bool, encoding string) ([]byte, error) {
 	return bitmap.ToBytes(m), nil
 }

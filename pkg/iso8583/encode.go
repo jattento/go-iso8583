@@ -41,7 +41,8 @@ type Marshaler interface {
 type MarshalerBitmap interface {
 	// b should always represent which bits are on what not necessarily is equal to what fields are present.
 	// For example: In a traditional 8 byte bitmap. Te presence of field 65 would be represented in with bit 1 on.
-	// len(b) == length tag
+	// len(b) == length tag.
+	// the output is the bitmap in bytes ready to put in the message.
 	MarshalISO8583Bitmap(b map[int]bool, encoding string) ([]byte, error)
 }
 

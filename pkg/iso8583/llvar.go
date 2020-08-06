@@ -1,12 +1,10 @@
-package field
+package iso8583
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/jattento/go-iso8583/pkg/field/encoding"
 )
 
 // LLVAR: For use of different encoding for 'LL' and 'VAR' separate both encodings with a slash,
@@ -49,12 +47,12 @@ func lengthMarshal(l int, v string, enc string) ([]byte, error) {
 		llValue = "0" + llValue
 	}
 
-	llContent, err := applyEncoding([]byte(llValue), llEncoding, encoding.Marshal)
+	llContent, err := applyEncoding([]byte(llValue), llEncoding, MarshalEncodings)
 	if err != nil {
 		return nil, err
 	}
 
-	varContent, err = applyEncoding(varContent, varEncoding, encoding.Marshal)
+	varContent, err = applyEncoding(varContent, varEncoding, MarshalEncodings)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +77,7 @@ func lengthUnmarshal(l int, b []byte, length int, enc string) (string, int, erro
 		varEncoding = encS[1]
 	}
 
-	llContent, err := applyEncoding(llContent, llEncoding, encoding.Unmarshal)
+	llContent, err := applyEncoding(llContent, llEncoding, UnmarshalDecodings)
 	if err != nil {
 		return "", 0, err
 	}
@@ -98,7 +96,7 @@ func lengthUnmarshal(l int, b []byte, length int, enc string) (string, int, erro
 	varContent := make([]byte, llValue)
 	copy(varContent, b[length:length+llValue])
 
-	varContent, err = applyEncoding(varContent, varEncoding, encoding.Unmarshal)
+	varContent, err = applyEncoding(varContent, varEncoding, UnmarshalDecodings)
 	if err != nil {
 		return "", 0, err
 	}
