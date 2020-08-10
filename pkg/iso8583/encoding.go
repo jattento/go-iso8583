@@ -5,12 +5,12 @@ import (
 )
 
 var UnmarshalDecodings = map[string]func([]byte) ([]byte, error){
-	"ebcdic": errWrapper(ebcdic.Decode),
+	"ebcdic": errWrapper(ebcdic.V1047.ToASCII),
 	"ascii":  nop,
 }
 
 var MarshalEncodings = map[string]func([]byte) ([]byte, error){
-	"ebcdic": errWrapper(ebcdic.Encode),
+	"ebcdic": errWrapper(ebcdic.V1047.FromASCII),
 	"ascii":  nop,
 }
 

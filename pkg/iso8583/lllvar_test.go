@@ -24,14 +24,14 @@ func TestLLLVAR_MarshalISO8583(t *testing.T) {
 			V:           "ascii_standard",
 			Encoding:    "ebcdic/ascii",
 			OutputError: "",
-			OutputBytes: append(ebcdic.Encode([]byte("014")), []byte("ascii_standard")...),
+			OutputBytes: append(ebcdic.V1047.FromASCII([]byte("014")), []byte("ascii_standard")...),
 		},
 		{
 			Name:        "ebcdic_standard",
 			V:           "ebcdic",
 			Encoding:    "ebcdic",
 			OutputError: "",
-			OutputBytes: append(ebcdic.Encode([]byte("006")), ebcdic.Encode([]byte("ebcdic"))...),
+			OutputBytes: append(ebcdic.V1047.FromASCII([]byte("006")), ebcdic.V1047.FromASCII([]byte("ebcdic"))...),
 		},
 	}
 
@@ -75,7 +75,7 @@ func TestLLLVAR_UnmarshalISO8583(t *testing.T) {
 			InputLength:   1,
 			OutputContent: "ebcdic",
 			OutputError:   "",
-			InputBytes:    append(ebcdic.Encode([]byte("6")), []byte("ebcdic")...),
+			InputBytes:    append(ebcdic.V1047.FromASCII([]byte("6")), []byte("ebcdic")...),
 			ExpectedRead:  7,
 		},
 	}
