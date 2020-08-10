@@ -31,7 +31,7 @@ func TestMTI_MarshalISO8583(t *testing.T) {
 			Encoding:    "ebcdic",
 			OutputError: "",
 			Numba:       0100,
-			OutputBytes: ebcdic.Encode([]byte("0100")),
+			OutputBytes: ebcdic.V1047.FromASCII([]byte("0100")),
 		},
 	}
 
@@ -73,7 +73,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   4,
 			OutputContent: "0110",
 			OutputError:   "",
-			InputBytes:    ebcdic.Encode([]byte("0110")),
+			InputBytes:    ebcdic.V1047.FromASCII([]byte("0110")),
 		},
 		{
 			Name:          "error_length",
@@ -81,7 +81,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   5,
 			OutputContent: "",
 			OutputError:   "mti isnt 4 characters long, its: 5",
-			InputBytes:    ebcdic.Encode([]byte("01100")),
+			InputBytes:    ebcdic.V1047.FromASCII([]byte("01100")),
 		},
 		{
 			Name:          "error_text",
@@ -89,7 +89,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   4,
 			OutputContent: "",
 			OutputError:   "mti characters arent numbers: strconv.Atoi: parsing \"text\": invalid syntax",
-			InputBytes:    ebcdic.Encode([]byte("text")),
+			InputBytes:    ebcdic.V1047.FromASCII([]byte("text")),
 		},
 	}
 

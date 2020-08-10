@@ -31,7 +31,7 @@ func TestVAR_MarshalISO8583(t *testing.T) {
 			V:           "ebcdic",
 			Encoding:    "ebcdic",
 			OutputError: "",
-			OutputBytes: ebcdic.Encode([]byte("ebcdic")),
+			OutputBytes: ebcdic.V1047.FromASCII([]byte("ebcdic")),
 		},
 	}
 
@@ -73,7 +73,7 @@ func TestVAR_UnmarshalISO8583(t *testing.T) {
 			InputLength:   6,
 			OutputContent: "ebcdic",
 			OutputError:   "",
-			InputBytes:    ebcdic.Encode([]byte("ebcdic")),
+			InputBytes:    ebcdic.V1047.FromASCII([]byte("ebcdic")),
 		},
 	}
 
