@@ -55,4 +55,32 @@ func OptionUnknownHandler(handler HandlerFunc) Option {
 	}
 }
 
+func OptionLogConfiguration(cfg *LogOn) Option{
+	return func(config *configuration) {
+		config.LogOn = cfg
+	}
+}
+
+func OptionDeactivatedConnectionsCapacity(cap int) Option{
+	return func(config *configuration) {
+		config.DeactivatedConnectionCapacity = cap
+	}
+}
+
+func OptionConnIdGenerator(Func ConnectionIdGenerator) Option{
+	return func(config *configuration) {
+		config.ConnIdGenerator = Func
+	}
+}
+
 var nopLogger = func(v ...interface{}) {}
+
+var DefaultLogOnConfiguration = LogOn{
+	ErrorAcceptIncomingConnection:      true,
+	ErrorReadMTI:                       true,
+	ErrorUndefinedHandler:              true,
+	ErrorReadConnection:                true,
+	ErrorSettingConnectionReadDeadline: true,
+
+	ServingConnection: true,
+}

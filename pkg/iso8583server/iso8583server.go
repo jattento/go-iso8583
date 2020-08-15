@@ -1,6 +1,7 @@
 package iso8583server
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -17,18 +18,39 @@ import (
 type Server struct {
 	config       configuration
 	handlerRules []handlerRule
+
+	// Connections contains all active connections and may contain non active.
+	// Non active connections are not deleted instantly, only if the configured limit is hitted.
+	// Clients should feel free to delete non active connections.
+	Connections *connectionDB
 }
 
 type configuration struct {
-	Listener       net.Listener
-	LogInfo        LogFunc
-	LogErr         LogFunc
-	NetRead        NetReadFunc
-	ReadMTI        ReadMTIFunc
-	UnknownHandler HandlerFunc
+	// DeactivatedConnectionCapacity is the amount of deactivated commection persisted
+	// in the Connections DB,if the db is at full capacity the connection with the oldest
+	// read/write is deleted.
+	DeactivatedConnectionCapacity int
+	Listener                      net.Listener
+	LogInfo                       LogFunc
+	LogErr                        LogFunc
+	NetRead                       NetReadFunc
+	ReadMTI                       ReadMTIFunc
+	UnknownHandler                HandlerFunc
+	LogOn                         *LogOn
+	ConnIdGenerator               ConnectionIdGenerator
 
 	// Timeout is the max time the server waits for new messages before closing the connection
 	Timeout time.Duration
+}
+
+type LogOn struct {
+	ErrorSettingConnectionReadDeadline bool
+	ErrorReadMTI                       bool
+	ErrorUndefinedHandler              bool
+	ErrorReadConnection                bool
+	ErrorAcceptIncomingConnection      bool
+
+	ServingConnection bool
 }
 
 type handlerRule struct {
@@ -36,15 +58,17 @@ type handlerRule struct {
 	handler HandlerFunc
 }
 
+type HandlerFunc func(r Response, message []byte)
+
 type ReadMTIFunc = func([]byte) (mti.MTI, error)
 
 type LogFunc = func(v ...interface{})
 
-type HandlerFunc = func(connection io.WriteCloser, message []byte)
-
 type NetReadFunc = func(io.Reader) (chan []byte, chan error)
 
 type Rule = func(mti.MTI) bool
+
+type ConnectionIdGenerator = func() (string, error)
 
 func New(options ...Option) (*Server, error) {
 	config := configuration{}
@@ -80,7 +104,7 @@ func New(options ...Option) (*Server, error) {
 
 	if config.UnknownHandler == nil {
 		// nop handler
-		config.UnknownHandler = func(connection io.WriteCloser, message []byte) { return }
+		config.UnknownHandler = func(r Response, message []byte) { return }
 	}
 
 	if config.LogInfo == nil {
@@ -91,18 +115,30 @@ func New(options ...Option) (*Server, error) {
 		config.LogErr = log.New(os.Stderr, "iso8583server_error ", log.LstdFlags).Print
 	}
 
-	return &Server{config: config}, nil
+	if config.LogOn == nil {
+		config.LogOn = &DefaultLogOnConfiguration
+	}
+
+	if config.ConnIdGenerator == nil {
+		config.ConnIdGenerator = defaultIdGenerator
+	}
+
+	return &Server{config: config, Connections: &connectionDB{m: map[string]*Connection{}}}, nil
 }
 
-func (server *Server) handleConnection(c net.Conn) {
+func (server *Server) handleConnection(c *Connection) {
 	extendReadDeadline := func() {
 		if err := c.SetReadDeadline(time.Now().Add(server.config.Timeout)); err != nil {
-			server.config.LogErr(fmt.Sprintf("failed setting read deadline: %v", handleErrorNet(err, c)))
+			if server.config.LogOn.ErrorSettingConnectionReadDeadline {
+				server.config.LogErr(fmt.Sprintf("failed setting read deadline: %v", handleErrorNet(err, c)))
+			}
 			return
 		}
 	}
 
-	server.config.LogInfo(fmt.Sprintf("serving %s\n", c.RemoteAddr().String()))
+	if server.config.LogOn.ServingConnection {
+		server.config.LogInfo(fmt.Sprintf("serving %s\n", c.RemoteAddr().String()))
+	}
 
 	extendReadDeadline()
 
@@ -111,28 +147,40 @@ func (server *Server) handleConnection(c net.Conn) {
 	for {
 		select {
 		case message := <-messageChan:
-			func(){
+			func() {
 				extendReadDeadline()
+				c.LastRead = time.Now()
 
 				mtiValue, err := server.config.ReadMTI(message)
 				if err != nil {
-					server.config.LogErr("cant read MTI from message: ", err)
-					go server.config.UnknownHandler(c, message)
+					if server.config.LogOn.ErrorReadMTI {
+						server.config.LogErr("cant read MTI from message: ", err)
+					}
+					go startHandler(server.config.UnknownHandler, c, message)
 					return
 				}
 
 				for _, hr := range server.handlerRules {
 					if hr.rule(mtiValue) {
-						go hr.handler(c, message)
+						go startHandler(hr.handler, c, message)
 						return
 					}
 				}
 
-				server.config.LogErr("no handler defined for MTI ", mtiValue, " sending to unknown manager")
-				go server.config.UnknownHandler(c, message)
+				if server.config.LogOn.ErrorUndefinedHandler {
+					server.config.LogErr("no handler defined for MTI ", mtiValue, " sending to unknown manager")
+				}
+
+				go startHandler(server.config.UnknownHandler, c, message)
 			}()
 		case err := <-errChan:
-			server.config.LogErr(c.RemoteAddr().String(),": ",handleErrorNet(err, c))
+			c.Active = false
+			server.Connections.deleteOldest(server.config.DeactivatedConnectionCapacity)
+
+			if server.config.LogOn.ErrorReadConnection {
+				server.config.LogErr(c.RemoteAddr().String(), ": ", handleErrorNet(err, c))
+			}
+
 			return
 		}
 	}
@@ -167,28 +215,38 @@ func (server *Server) AddTopPriorityHandler(handler HandlerFunc, rules ...Rule) 
 }
 
 func (server *Server) Start() {
-	for range time.NewTicker(time.Second).C {
+	for {
 		c, err := server.config.Listener.Accept()
 		if err != nil {
-			server.config.LogErr(fmt.Sprintf("cant accept incoming connection %v", err))
+			if server.config.LogOn.ErrorAcceptIncomingConnection {
+				server.config.LogErr(fmt.Sprintf("cant accept incoming connection %v", err))
+			}
+
 			continue
 		}
 
-		go server.handleConnection(c)
+		connection, err := server.newConnection(c)
+		if err != nil {
+			if server.config.LogOn.ErrorAcceptIncomingConnection {
+				server.config.LogErr(fmt.Sprintf("cant accept incoming connection, error generating id: %v", err))
+			}
+			_ = c.Close()
+		}
+		go server.handleConnection(connection)
 	}
 }
 
 func DefaultReadMTI(b []byte) (mti.MTI, error) {
 	if len(b) < 4 {
-		return 0, errors.New("message to short to read MTI")
+		return "", errors.New("message to short to read MTI")
 	}
 
-	iMTI, err := strconv.Atoi(string(b[:4]))
+	_, err := strconv.Atoi(string(b[:4]))
 	if err != nil {
-		return 0, fmt.Errorf("first 4 characters arent numbers: %v", err)
+		return "", fmt.Errorf("first 4 characters arent numbers: %v", err)
 	}
 
-	return mti.MTI(iMTI), nil
+	return mti.MTI(b[:4]), nil
 }
 
 type DefaultReader struct {
@@ -260,6 +318,33 @@ func (reader DefaultReader) Read(net io.Reader) (chan []byte, chan error) {
 func handleErrorNet(err error, c net.Conn) error {
 	if clErr := c.Close(); clErr != nil {
 		return fmt.Errorf("%v and failed closing connection: %v", err, clErr)
+	}
+	return err
+}
+
+func startHandler(h HandlerFunc, c *Connection, message []byte) {
+	r := Response{
+		buff:       bytes.NewBuffer(nil),
+		connection: c,
+	}
+
+	h(r, message)
+
+}
+
+type Response struct {
+	buff       *bytes.Buffer
+	connection *Connection
+}
+
+func (r Response) Write(b []byte) (int, error) {
+	return r.buff.Write(b)
+}
+
+func (r Response) Close() error {
+	_, err := r.connection.Write(r.buff.Bytes())
+	if err == nil {
+		r.connection.LastWrite = time.Now()
 	}
 	return err
 }
