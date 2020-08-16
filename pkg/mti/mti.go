@@ -2,48 +2,70 @@ package mti
 
 import "strconv"
 
+// MTI is a string representation of a iso8583 MTI field.
+// MTI has inbuilt methods that allows compare with others MTI considering definitions of the protocol.
+// Some MTI methods are going to panic if some of the characters aren't numeric.
 type MTI string
 
+// New creates a new MTI considering the definition of each character.
 func New(origin origin, function function, class class, version version) MTI {
 	return MTI(itoa(int(origin))[:1] + itoa(int(function))[:1] + itoa(int(class))[:1] + itoa(int(version))[:1])
 }
 
+// Origin returns the origin element.
+// Origin panics if some of the MTI characters isn't numeric.
 func (mti MTI) Origin() origin {
 	return origin(atoi(string(mti)[3:4]))
 }
 
+// Function returns the function element.
+// Function panics if some of the MTI characters isn't numeric.
 func (mti MTI) Function() function {
 	return function(atoi(string(mti)[2:3] + "0"))
 }
 
+// Class returns the class element.
+// Class panics if some of the MTI characters isn't numeric.
 func (mti MTI) Class() class {
 	return class(atoi(string(mti)[1:2] + "00"))
 }
 
+// Version returns the version element.
+// Version panics if some of the MTI characters isn't numeric.
 func (mti MTI) Version() version {
 	return version(atoi(string(mti)[0:1] + "000"))
 }
 
+// String converts the mti to string type.
 func (mti MTI) String() string {
 	return string(mti)
 }
 
+// Equal performs the comparision.
 func (mti MTI) Equal(v MTI) bool {
 	return mti == v
 }
 
+// LowerThan performs the comparision.
+// LowerThan panics if some of the MTI characters isn't numeric.
 func (mti MTI) LowerThan(v MTI) bool {
 	return atoi(string(mti)) < atoi(string(v))
 }
 
+// LowerOrEqualThan performs the comparision.
+// LowerOrEqualThan panics if some of the MTI characters isn't numeric.
 func (mti MTI) LowerOrEqualThan(v MTI) bool {
 	return atoi(string(mti)) <= atoi(string(v))
 }
 
+// HigherThan performs the comparision.
+// HigherThan panics if some of the MTI characters isn't numeric.
 func (mti MTI) HigherThan(v MTI) bool {
 	return atoi(string(mti)) > atoi(string(v))
 }
 
+// HigherOrEqualThan performs the comparision.
+// HigherOrEqualThan panics if some of the MTI characters isn't numeric.
 func (mti MTI) HigherOrEqualThan(v MTI) bool {
 	return atoi(string(mti)) >= atoi(string(v))
 }

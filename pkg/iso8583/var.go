@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -23,6 +24,15 @@ func (v VAR) MarshalISO8583(length int, enc string) ([]byte, error) {
 
 // UnmarshalISO8583 allows to use this type in structs and be able tu iso8583.Unmarshal it. //TODO CHECK LENGTH
 func (v *VAR) UnmarshalISO8583(b []byte, length int, enc string) (int, error) {
+	if b == nil {
+		return 0, errors.New("bytes input is nil")
+	}
+
+	if len(b) < length {
+		return 0, fmt.Errorf("message remain (%v bytes) is shorter than indicated length: %v",
+			len(b), length)
+	}
+
 	byt := make([]byte, length)
 	copy(byt, b[:length])
 

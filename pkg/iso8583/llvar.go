@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,6 +22,10 @@ func (v LLVAR) MarshalISO8583(length int, enc string) ([]byte, error) {
 
 // UnmarshalISO8583 allows to use this type in structs and be able tu iso8583.Unmarshal it.
 func (v *LLVAR) UnmarshalISO8583(b []byte, length int, enc string) (int, error) {
+	if b == nil {
+		return 0, errors.New("bytes input is nil")
+	}
+
 	str, n, err := lengthUnmarshal(2, b, length, enc)
 	*v = LLVAR(str)
 	return n, err
@@ -85,7 +90,7 @@ func lengthUnmarshal(l int, b []byte, length int, enc string) (string, int, erro
 	llValue, err := strconv.Atoi(string(llContent))
 	if err != nil {
 		return "", 0, fmt.Errorf("obtained %s after decoding is not a valid integer: %v",
-			strings.Repeat("L", l), llContent)
+			strings.Repeat("L", l), string(llContent))
 	}
 
 	if len(b)-length < llValue {

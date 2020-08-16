@@ -1,48 +1,82 @@
 package ebcdic
 
-type version []entry
+type version struct {
+	entries []entry
+
+	// Maps are cached for better performance
+	encoding map[rune]byte
+	decoding map[byte]rune
+}
 
 type entry struct {
 	EBCDIC         byte
 	ASCII          byte
-	representation string
+	representation rune
 	description    string
 }
 
-const null = 0x0
+const NULL = 0x0
 
-func (v version) FromASCII(b []byte) []byte {
+// FromGoString converts a string to ebcdic bytes.
+func (v *version) FromGoString(s string) []byte {
+	if len(v.encoding) == 0 {
+		v.generateEncodingMap()
+	}
+
+	rs := []rune(s)
 	output := make([]byte, 0)
-
-	for _, byt := range b {
+	for _, r := range rs {
 		func() {
-			for _, e := range v {
-				if e.ASCII == byt {
-					output = append(output, e.EBCDIC)
+			for k, v := range v.encoding {
+				if k == r {
+					output = append(output, v)
 					return
 				}
 			}
-			output = append(output, null)
+			output = append(output, NULL)
 		}()
 	}
-
 	return output
 }
 
-func (v version) ToASCII(b []byte) []byte {
-	output := make([]byte, 0)
-
-	for _, byt := range b {
-		func() {
-			for _, e := range v {
-				if e.EBCDIC == byt {
-					output = append(output, e.ASCII)
-					return
-				}
-			}
-			output = append(output, null)
-		}()
+// FromGoString converts a ebcdic bytes to a string.
+func (v *version) ToGoString(b []byte) string {
+	if len(v.decoding) == 0 {
+		v.generateDecodingMap()
 	}
 
-	return output
+	output := make([]rune, 0)
+	for _, byt := range b {
+			for k, v := range v.decoding {
+				if k == byt {
+					output = append(output, v)
+					break
+				}
+			}
+	}
+	return string(output)
+}
+
+func (v *version) generateEncodingMap() {
+	v.encoding = make(map[rune]byte)
+
+	for _, kv := range v.entries {
+		if kv.representation != 0 {
+			v.encoding[kv.representation] = kv.EBCDIC
+			continue
+		}
+		v.encoding[rune(kv.ASCII)] = kv.EBCDIC
+	}
+}
+
+func (v *version) generateDecodingMap() {
+	v.decoding = make(map[byte]rune)
+
+	for _, kv := range v.entries {
+		if kv.representation != 0 {
+			v.decoding[kv.EBCDIC] = kv.representation
+			continue
+		}
+		v.decoding[kv.EBCDIC] = rune(kv.ASCII)
+	}
 }

@@ -1,6 +1,7 @@
 package iso8583_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 )
 
 // TODO Nil field test case
+// TODO second bitmap only if follow field are present
 func TestMarshal(t *testing.T) {
 	exampleString := iso8583.VAR("1234")
 	testList := []struct {
@@ -21,104 +23,139 @@ func TestMarshal(t *testing.T) {
 		OutputError string
 	}{
 		{
-			Name: "simple_one_field",
+			Name: "simple_one_field_ebcdic",
 			Run:  true,
 			Input: struct {
-				Field1 iso8583.VAR `iso8583:"1"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ebcdic"`
+				Field2 iso8583.VAR    `iso8583:"1"`
 			}{
 				Field1: "1234",
+				Field2: "1234",
 			},
 			OutputError: "",
-			OutputBytes: []byte("1234"),
-		}, {
+			OutputBytes: []byte{0xf1, 0xf2, 0xf3, 0xf4, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x32, 0x33, 0x34},
+		},
+		{
+			Name: "unused_bitmap",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti"`
+				Field2 iso8583.BITMAP `iso8583:"1,length:64"`
+				Field3 iso8583.VAR    `iso8583:"2"`
+			}{
+				Field1: "1000",
+				Field3: "1234",
+			},
+			OutputError: "",
+			OutputBytes: []byte{0x31, 0x30, 0x30, 0x30, 0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x32, 0x33, 0x34},
+		},
+		{
 			Name: "simple_one_field_string_one_bytes",
 			Run:  true,
 			Input: struct {
-				Field1 string `iso8583:"1"`
-				Field2 []byte `iso8583:"2"`
+				MTI    string         `iso8583:"mti"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field2 []byte         `iso8583:"2"`
 			}{
-				Field1: "field1",
+				MTI:    "field1",
 				Field2: []byte("field2"),
 			},
 			OutputError: "",
-			OutputBytes: []byte("field1field2"),
+			OutputBytes: appendBytes([]byte("field1"), []byte{0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, []byte("field2")),
 		},
 		{
 			Name: "simple_one_field_nil",
 			Run:  true,
 			Input: struct {
-				Field1 *iso8583.VAR `iso8583:"1"`
+				MTI    string         `iso8583:"mti"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 *iso8583.VAR   `iso8583:"1"`
+				Field2 iso8583.VAR    `iso8583:"2"`
 			}{
+				MTI:    "1000",
 				Field1: nil,
+				Field2: "1000",
 			},
 			OutputError: "",
-			OutputBytes: []byte(""),
+			OutputBytes: []byte{0x31, 0x30, 0x30, 0x30, 0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x30, 0x30, 0x30},
 		},
 		{
 			Name: "simple_one_field_one_denied",
 			Run:  true,
 			Input: struct {
-				Field1 iso8583.VAR `iso8583:"1"`
-				Field2 iso8583.VAR `iso8583:"-"`
+				MTI    iso8583.VAR    `iso8583:"mti"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field2 iso8583.VAR    `iso8583:"-"`
+				Field3 iso8583.VAR    `iso8583:"2"`
 			}{
-				Field1: "1234",
+				MTI:    "1234",
 				Field2: "1234",
+				Field3: "1234",
 			},
 			OutputError: "",
-			OutputBytes: []byte("1234"),
+			OutputBytes: []byte{0x31, 0x32, 0x33, 0x34, 0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x32, 0x33, 0x34},
 		},
 		{
 			Name: "simple_one_field_one_private_one_anonymous_one_without_tag_one_omitempty",
 			Run:  true,
 			Input: struct {
-				Field1    iso8583.VAR `iso8583:"1"`
+				MTI         iso8583.VAR    `iso8583:"mti"`
+				Bitmap      iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				iso8583.VAR `iso8583:"2"`
-				field3    iso8583.VAR `iso8583:"3"`
-				Field4    iso8583.VAR
-				Field5    iso8583.VAR `iso8583:"5,omitempty"`
+				field3      iso8583.VAR `iso8583:"3"`
+				Field4      iso8583.VAR
+				Field5      iso8583.VAR `iso8583:"5,omitempty"`
+				Field6      iso8583.VAR `iso8583:"6,omitempty"`
 			}{
-				Field1: "1234",
+				MTI:    "1234",
 				VAR:    "1234",
 				field3: "1234",
 				Field4: "1234",
 				Field5: "",
+				Field6: "1234",
 			},
 			OutputError: "",
-			OutputBytes: []byte("1234"),
+			OutputBytes: []byte{0x31, 0x32, 0x33, 0x34, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x32, 0x33, 0x34},
 		},
 		{
 			Name: "simple_three_field",
 			Run:  true,
 			Input: struct {
-				Field3 iso8583.VAR `iso8583:"3"`
-				Field1 iso8583.VAR `iso8583:"1"`
-				Field2 iso8583.VAR `iso8583:"2"`
+				MTI    iso8583.VAR    `iso8583:"mti"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"1"`
+				Field2 iso8583.VAR    `iso8583:"2"`
 			}{
 				Field1: "1234",
 				Field2: "1234",
-				Field3: "1234",
+				MTI:    "1234",
 			},
 			OutputError: "",
-			OutputBytes: []byte("123412341234"),
+			OutputBytes: appendBytes([]byte("1234"), []byte{0xc0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, []byte("12341234")),
 		},
 		{
 			Name: "simple_one_field_pointer",
 			Run:  true,
 			Input: &struct {
-				Field1 *iso8583.VAR `iso8583:"1"`
+				MTI    *iso8583.VAR   `iso8583:"mti"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"1"`
 			}{
-				Field1: &exampleString,
+				MTI:    &exampleString,
+				Field1: "1234",
 			},
 			OutputError: "",
-			OutputBytes: []byte("1234"),
+			OutputBytes: []byte{0x31, 0x32, 0x33, 0x34, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x31, 0x32, 0x33, 0x34},
 		},
 		{
 			Name: "simple_one_field_with_mti_bitmap",
 			Run:  true,
 			Input: struct {
 				Bitmap BMAPWithoutMarshalerBitmap `iso8583:"bitmap"`
-				MTI    iso8583.VAR                  `iso8583:"mti"`
-				Field1 iso8583.VAR                  `iso8583:"1"`
+				MTI    iso8583.VAR                `iso8583:"mti"`
+				Field1 iso8583.VAR                `iso8583:"1"`
 			}{
 				MTI:    "1000",
 				Bitmap: BMAPWithoutMarshalerBitmap{Bitmap: bitmap.FromBytes([]byte{126})},
@@ -232,12 +269,12 @@ func TestMarshal(t *testing.T) {
 				[]byte("66778899")...), // Fields 162, 192,224.
 		},
 		{
-			Name: "example_1", //TODO BITMAP AUTO LENGTH 64
+			Name: "example_1",
 			Run:  true,
 			Input: struct {
 				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
-				PAN                   iso8583.LLVAR  `iso8583:"2"`
+				MTI                   iso8583.LLVAR  `iso8583:"mti"`
 				ProcessingCode        iso8583.VAR    `iso8583:"3"`
 				Amount                iso8583.VAR    `iso8583:"4"`
 				ICC                   iso8583.LLLVAR `iso8583:"55"`
@@ -245,7 +282,7 @@ func TestMarshal(t *testing.T) {
 				MessageNumber         iso8583.VAR    `iso8583:"71"`
 				TransactionDescriptor iso8583.VAR    `iso8583:"104"`
 			}{
-				PAN:                   iso8583.LLVAR("1234567891234567"),
+				MTI:                   iso8583.LLVAR("1234567891234567"),
 				ProcessingCode:        iso8583.VAR("1000"),
 				Amount:                iso8583.VAR("0001000"),
 				ICC:                   iso8583.LLLVAR("ABCDEFGH123456789"),
@@ -255,17 +292,33 @@ func TestMarshal(t *testing.T) {
 			},
 			OutputError: "",
 			OutputBytes: appendBytes(
-				[]byte{0xf0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0x0}, // First bitmap
+				[]byte("16"), []byte("1234567891234567"), // MTI
+				[]byte{0xb0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0x0}, // First bitmap
 				[]byte{0x42, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0}, // Second bitmap
-				[]byte("16"), []byte("1234567891234567"),        // PAN
-				[]byte("1000"),                             // Processing code
-				[]byte("0001000"),                          // Amount
-				[]byte("017"), []byte("ABCDEFGH123456789"), // ICC
+				[]byte("1000"),                                  // Processing code
+				[]byte("0001000"),                               // Amount
+				[]byte("017"), []byte("ABCDEFGH123456789"),      // ICC
 				[]byte("8"),               // Settlement code
 				[]byte("1"),               // Message number
 				[]byte("JUST A PURCHASE"), // Transaction Descriptor
 
 			),
+		},
+		{
+			Name: "field_marshal_bitmap_len_0",
+			Run:  true,
+			Input: struct {
+				Field1  iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap2 BmapMock       `iso8583:"2,length:64"`
+				Field3  iso8583.VAR    `iso8583:"3,encoding:ascii"`
+			}{
+				Field1:  "1",
+				Bitmap2: BmapMock{},
+				Field3:  "999",
+			},
+			OutputError: "",
+			OutputBytes: []byte{0x31, 0x20, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x39, 0x39, 0x39},
 		},
 		{
 			Name: "error_0_field",
@@ -309,6 +362,188 @@ func TestMarshal(t *testing.T) {
 			OutputError: "iso8583.marshal: field asd does not have a valid field name",
 			OutputBytes: nil,
 		},
+		{
+			Name:        "nil_input",
+			Run:         true,
+			Input:       nil,
+			OutputError: "iso8583.marshal: nil input",
+			OutputBytes: nil,
+		},
+		{
+			Name: "length_not_int_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ebcdic,length:a"`
+			}{
+				Field1: "1234",
+			},
+			OutputError: "iso8583.marshal: field mti does not have a valid length",
+			OutputBytes: nil,
+		},
+		{
+			Name: "field_marshal_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:whale_song"`
+			}{
+				Field1: "1234",
+			},
+			OutputError: "iso8583.marshal: field mti cant be marshaled: encoder 'whale_song' does not exist",
+			OutputBytes: nil,
+		},
+		{
+			Name: "not_implemented_type_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 rune           `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: 'q',
+			},
+			OutputError: "iso8583.marshal: field mti does not implement Marshaler interface, is a string or slice of " +
+				"bytes but does have iso8583 tags",
+			OutputBytes: nil,
+		},
+		{
+			Name: "mti_repeated_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+				Field2 iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+				Field2: "2",
+			},
+			OutputError: "iso8583.marshal: field mti is repeated",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_repeated_not_bitmap_marshal_error",
+			Run:  true,
+			Input: struct {
+				Bitmap  []byte      `iso8583:"bitmap,length:64"`
+				Bitmap2 []byte      `iso8583:"bitmap,length:64"`
+				Field1  iso8583.VAR `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1:  "1",
+				Bitmap:  []byte{1},
+				Bitmap2: []byte{1},
+			},
+			OutputError: "iso8583.marshal: field bitmap is repeated",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_repeated_error",
+			Run:  true,
+			Input: struct {
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap2 iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1  iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: field bitmap is repeated",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_invalid_length_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:a"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: field bitmap is implements bitmap interface and does not have a valid length",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_no_content_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: first bitmap present but without content",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_invalid_name_error",
+			Run:  true,
+			Input: struct {
+				Bitmap       iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				BitmapSecond iso8583.BITMAP `iso8583:"bmap,length:64"`
+				Field1       iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583: unrecognized field: bmap",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_invalid_name_0_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"0,length:64"`
+				Field1 iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: field 0 not allowed",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_repeated_error",
+			Run:  true,
+			Input: struct {
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap2 iso8583.BITMAP `iso8583:"2,length:64"`
+				Bitmap3 iso8583.BITMAP `iso8583:"2,length:64"`
+				Field1  iso8583.VAR    `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: field 2 is repeated",
+			OutputBytes: nil,
+		},
+		{
+			Name: "mti_not_present_error",
+			Run:  true,
+			Input: struct {
+				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+			}{},
+			OutputError: "iso8583.marshal: MTI not present",
+			OutputBytes: nil,
+		},
+		{
+			Name: "bitmap_not_present",
+			Run:  true,
+			Input: struct {
+				Field1 iso8583.VAR `iso8583:"mti,encoding:ascii"`
+			}{
+				Field1: "1",
+			},
+			OutputError: "iso8583.marshal: first bitmap no present",
+			OutputBytes: nil,
+		},
+		{
+			Name: "field_marshal_bitmap_failed",
+			Run:  true,
+			Input: struct {
+				Field1 iso8583.VAR `iso8583:"mti,encoding:ascii"`
+				Bitmap BmapMock    `iso8583:"bitmap,length:64"`
+			}{
+				Field1: "1",
+				Bitmap: BmapMock{returnError: errors.New("forced_error")},
+			},
+			OutputError: "iso8583.marshal: field bitmap cant be marshaled: forced_error",
+			OutputBytes: nil,
+		},
 	}
 
 	for _, testCase := range testList {
@@ -337,10 +572,6 @@ type BMAPWithoutMarshalerBitmap struct {
 	bitmap.Bitmap
 }
 
-func (b *BMAPWithoutMarshalerBitmap) Bits() (map[int]bool, error) {
-	return b.Bitmap, nil
-}
-
 func (b *BMAPWithoutMarshalerBitmap) UnmarshalISO8583(byt []byte, length int, encoding string) (int, error) {
 	const bitmapLength = 8
 	b.Bitmap = bitmap.FromBytes(byt[:bitmapLength])
@@ -355,4 +586,30 @@ func appendBytes(b ...[]byte) (bb []byte) {
 		bb = append(bb, byt...)
 	}
 	return bb
+}
+
+type BmapMock struct {
+	returnError              error
+	returnValueMarshalBmap   []byte
+	returnValueUnmarshalBmap int
+}
+
+func (b *BmapMock) UnmarshalISO8583(byt []byte, length int, encoding string) (int, error) {
+	if b.returnValueUnmarshalBmap != 0 {
+		return b.returnValueUnmarshalBmap, nil
+	}
+
+	return 0, b.returnError
+}
+
+func (b BmapMock) MarshalISO8583(length int, encoding string) ([]byte, error) {
+	return nil, b.returnError
+}
+
+func (b BmapMock) Bits() (map[int]bool, error) {
+	return nil, b.returnError
+}
+
+func (b BmapMock) MarshalISO8583Bitmap(m map[int]bool, encoding string) ([]byte, error) {
+	return b.returnValueMarshalBmap, b.returnError
 }

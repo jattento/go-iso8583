@@ -14,7 +14,7 @@ To install go-iso8583 package, you need to install Go and set your Go workspace 
 
 1. First you need [Go](https://golang.org/) installed, then you can use the below Go command to install go-iso8583.
 ```sh
-$ go get -u github.com/jattento/go-iso8583
+$ go get -u github.com/jattento/go-iso8583/iso8583
 ```
 
 2. Import it in your code:

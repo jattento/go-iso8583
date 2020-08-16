@@ -24,14 +24,14 @@ func TestLLLVAR_MarshalISO8583(t *testing.T) {
 			V:           "ascii_standard",
 			Encoding:    "ebcdic/ascii",
 			OutputError: "",
-			OutputBytes: append(ebcdic.V1047.FromASCII([]byte("014")), []byte("ascii_standard")...),
+			OutputBytes: append(ebcdic.V1047.FromGoString("014"), []byte("ascii_standard")...),
 		},
 		{
 			Name:        "ebcdic_standard",
 			V:           "ebcdic",
 			Encoding:    "ebcdic",
 			OutputError: "",
-			OutputBytes: append(ebcdic.V1047.FromASCII([]byte("006")), ebcdic.V1047.FromASCII([]byte("ebcdic"))...),
+			OutputBytes: append(ebcdic.V1047.FromGoString("006"), ebcdic.V1047.FromGoString("ebcdic")...),
 		},
 	}
 
@@ -75,7 +75,16 @@ func TestLLLVAR_UnmarshalISO8583(t *testing.T) {
 			InputLength:   1,
 			OutputContent: "ebcdic",
 			OutputError:   "",
-			InputBytes:    append(ebcdic.V1047.FromASCII([]byte("6")), []byte("ebcdic")...),
+			InputBytes:    append(ebcdic.V1047.FromGoString("6"), []byte("ebcdic")...),
+			ExpectedRead:  7,
+		},
+		{
+			Name:          "nil_bytes_error",
+			InputEncoding: "ascii",
+			InputLength:   1,
+			OutputContent: "ebcdic",
+			OutputError:   "bytes input is nil",
+			InputBytes:    nil,
 			ExpectedRead:  7,
 		},
 	}
@@ -86,7 +95,10 @@ func TestLLLVAR_UnmarshalISO8583(t *testing.T) {
 
 			n, err := v.UnmarshalISO8583(testCase.InputBytes, testCase.InputLength, testCase.InputEncoding)
 			if testCase.OutputError != "" {
-				assert.Errorf(t, err, testCase.OutputError)
+				if assert.NotNil(t, err) {
+					assert.Equal(t, err.Error(), testCase.OutputError)
+				}
+				return
 			} else {
 				if !assert.Nil(t, err) {
 					t.FailNow()
