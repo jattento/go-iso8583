@@ -1,6 +1,7 @@
 package iso8583_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -31,15 +32,28 @@ func TestVAR_MarshalISO8583(t *testing.T) {
 			V:           "ebcdic",
 			Encoding:    "ebcdic",
 			OutputError: "",
-			OutputBytes: ebcdic.V1047.FromASCII([]byte("ebcdic")),
+			OutputBytes: ebcdic.V1047.FromGoString("ebcdic"),
+		},
+		{
+			Name:        "encoding_error",
+			V:           "ebcdic",
+			Encoding:    "force_error",
+			OutputError: "encoder 'force_error' returned error: forced_error",
+			OutputBytes: nil,
 		},
 	}
+
+	iso8583.MarshalEncodings["force_error"] = func(bytes []byte) ([]byte, error) { return nil, errors.New("forced_error") }
+	defer delete(iso8583.MarshalEncodings, "force_error")
 
 	for _, testCase := range testList {
 		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {
 			o, err := testCase.V.MarshalISO8583(testCase.Length, testCase.Encoding)
 			if testCase.OutputError != "" {
-				assert.Errorf(t, err, testCase.OutputError)
+				if assert.NotNil(t, err) {
+					assert.Equal(t, err.Error(), testCase.OutputError)
+				}
+				return
 			} else {
 				if !assert.Nil(t, err) {
 					t.FailNow()
@@ -73,9 +87,36 @@ func TestVAR_UnmarshalISO8583(t *testing.T) {
 			InputLength:   6,
 			OutputContent: "ebcdic",
 			OutputError:   "",
-			InputBytes:    ebcdic.V1047.FromASCII([]byte("ebcdic")),
+			InputBytes:    ebcdic.V1047.FromGoString("ebcdic"),
+		},
+		{
+			Name:          "bytes_is_nil_error",
+			InputEncoding: "ascii",
+			InputLength:   6,
+			OutputContent: "",
+			OutputError:   "bytes input is nil",
+			InputBytes:    nil,
+		},
+		{
+			Name:          "encoding_error",
+			InputEncoding: "force_error",
+			InputLength:   6,
+			OutputContent: "",
+			OutputError:   "encoder 'force_error' returned error: forced_error",
+			InputBytes:    []byte("123123"),
+		},
+		{
+			Name:          "unexisting_encoding",
+			InputEncoding: "whale_song",
+			InputLength:   6,
+			OutputContent: "",
+			OutputError:   "encoder 'whale_song' does not exist",
+			InputBytes:    []byte("123123"),
 		},
 	}
+
+	iso8583.UnmarshalDecodings["force_error"] = func(bytes []byte) ([]byte, error) { return nil, errors.New("forced_error") }
+	defer delete(iso8583.UnmarshalDecodings, "force_error")
 
 	for _, testCase := range testList {
 		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {
@@ -83,7 +124,10 @@ func TestVAR_UnmarshalISO8583(t *testing.T) {
 
 			_, err := v.UnmarshalISO8583(testCase.InputBytes, testCase.InputLength, testCase.InputEncoding)
 			if testCase.OutputError != "" {
-				assert.Errorf(t, err, testCase.OutputError)
+				if assert.NotNil(t, err) {
+					assert.Equal(t, err.Error(), testCase.OutputError)
+				}
+				return
 			} else {
 				if !assert.Nil(t, err) {
 					t.FailNow()

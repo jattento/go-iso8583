@@ -1,6 +1,7 @@
 package iso8583_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jattento/go-iso8583/pkg/encoding/ebcdic"
 	"github.com/jattento/go-iso8583/pkg/iso8583"
@@ -31,7 +32,7 @@ func TestMTI_MarshalISO8583(t *testing.T) {
 			Encoding:    "ebcdic",
 			OutputError: "",
 			Numba:       0100,
-			OutputBytes: ebcdic.V1047.FromASCII([]byte("0100")),
+			OutputBytes: ebcdic.V1047.FromGoString("0100"),
 		},
 	}
 
@@ -73,7 +74,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   4,
 			OutputContent: "0110",
 			OutputError:   "",
-			InputBytes:    ebcdic.V1047.FromASCII([]byte("0110")),
+			InputBytes:    ebcdic.V1047.FromGoString("0110"),
 		},
 		{
 			Name:          "error_length",
@@ -81,7 +82,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   5,
 			OutputContent: "",
 			OutputError:   "mti isnt 4 characters long, its: 5",
-			InputBytes:    ebcdic.V1047.FromASCII([]byte("01100")),
+			InputBytes:    ebcdic.V1047.FromGoString("01100"),
 		},
 		{
 			Name:          "error_text",
@@ -89,9 +90,44 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   4,
 			OutputContent: "",
 			OutputError:   "mti characters arent numbers: strconv.Atoi: parsing \"text\": invalid syntax",
-			InputBytes:    ebcdic.V1047.FromASCII([]byte("text")),
+			InputBytes:    ebcdic.V1047.FromGoString("text"),
+		},
+		{
+			Name:          "error_text",
+			InputEncoding: "ebcdic",
+			InputLength:   4,
+			OutputContent: "",
+			OutputError:   "mti characters arent numbers: strconv.Atoi: parsing \"text\": invalid syntax",
+			InputBytes:    ebcdic.V1047.FromGoString("text"),
+		},
+		{
+			Name:          "unmarshal_error",
+			InputEncoding: "force_error",
+			InputLength:   4,
+			OutputContent: "",
+			OutputError:   "encoder 'force_error' returned error: forced_error",
+			InputBytes:    []byte{1,1,1,1,1},
+		},
+		{
+			Name:          "len_shorter_than_length_error",
+			InputEncoding: "ascii",
+			InputLength:   4,
+			OutputContent: "",
+			OutputError:   "message remain (1 bytes) is shorter than indicated length: 4",
+			InputBytes:    []byte("1"),
+		},
+		{
+			Name:          "nil_bytes_error",
+			InputEncoding: "ascii",
+			InputLength:   4,
+			OutputContent: "",
+			OutputError:   "bytes input is nil",
+			InputBytes:    nil,
 		},
 	}
+
+	iso8583.UnmarshalDecodings["force_error"] = func(bytes []byte) ([]byte, error) {return nil, errors.New("forced_error")}
+	defer delete(iso8583.UnmarshalDecodings, "force_error")
 
 	for _, testCase := range testList {
 		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {

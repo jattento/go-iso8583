@@ -91,3 +91,7 @@ func TestBytesToStringBits(t *testing.T) {
 		})
 	}
 }
+
+func TestStringBitsToBytes_Panic(t *testing.T) {
+	assert.Panics(t, func() {iso8583util.StringBitsToBytes("whale_song")})
+}

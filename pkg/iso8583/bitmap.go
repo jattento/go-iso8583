@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"errors"
 	"math"
 
 	"github.com/jattento/go-iso8583/pkg/bitmap"
@@ -15,6 +16,11 @@ type BITMAP struct {
 // UnmarshalISO8583 wrapps bitmap.FromBytes to match iso8583.Unmarshal interface.
 func (b *BITMAP) UnmarshalISO8583(byt []byte, length int, encoding string) (int, error) {
 	const bitsInByte = 8
+
+	if byt == nil {
+		return 0, errors.New("bytes input is nil")
+	}
+
 	bcap := int(math.Ceil(float64(length) / float64(bitsInByte)))
 	b.Bitmap = bitmap.FromBytes(byt[:bcap])
 	return bcap, nil
@@ -31,8 +37,15 @@ func (b BITMAP) Bits() (map[int]bool, error) {
 	return b.Bitmap, nil
 }
 
-
-// MarshalISO8583Bitmap
+// MarshalISO8583Bitmap returns a empty slice if all bytes are 0x0
 func (b BITMAP) MarshalISO8583Bitmap(m map[int]bool, encoding string) ([]byte, error) {
-	return bitmap.ToBytes(m), nil
+	bytes := bitmap.ToBytes(m)
+	for _, b := range bytes {
+		if b != 0x0 {
+			// Only if some byte has information, they are returned
+			return bytes, nil
+		}
+	}
+
+	return []byte{}, nil
 }

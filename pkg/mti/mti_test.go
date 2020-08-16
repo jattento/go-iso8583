@@ -41,31 +41,35 @@ func TestNew(t *testing.T) {
 }
 
 func TestMTI_Equal(t *testing.T) {
-	assert.False(t,mti.MTI("1000").Equal("0999"))
-	assert.True(t,mti.MTI("1000").Equal("1000"))
-	assert.False(t,mti.MTI("1000").Equal("1001"))
+	assert.False(t, mti.MTI("1000").Equal("0999"))
+	assert.True(t, mti.MTI("1000").Equal("1000"))
+	assert.False(t, mti.MTI("1000").Equal("1001"))
 }
 
 func TestMTI_HigherOrEqualThan(t *testing.T) {
-	assert.True(t,mti.MTI("1000").HigherOrEqualThan("0999"))
-	assert.True(t,mti.MTI("1000").HigherOrEqualThan("1000"))
-	assert.False(t,mti.MTI("1000").HigherOrEqualThan("1001"))
+	assert.True(t, mti.MTI("1000").HigherOrEqualThan("0999"))
+	assert.True(t, mti.MTI("1000").HigherOrEqualThan("1000"))
+	assert.False(t, mti.MTI("1000").HigherOrEqualThan("1001"))
 }
 
 func TestMTI_LowerOrEqualThan(t *testing.T) {
-	assert.False(t,mti.MTI("1000").LowerOrEqualThan("0999"))
-	assert.True(t,mti.MTI("1000").LowerOrEqualThan("1000"))
-	assert.True(t,mti.MTI("1000").LowerOrEqualThan("1001"))
+	assert.False(t, mti.MTI("1000").LowerOrEqualThan("0999"))
+	assert.True(t, mti.MTI("1000").LowerOrEqualThan("1000"))
+	assert.True(t, mti.MTI("1000").LowerOrEqualThan("1001"))
 }
 
 func TestMTI_HigherThan(t *testing.T) {
-	assert.False(t,mti.MTI("1000").LowerThan("0999"))
-	assert.False(t,mti.MTI("1000").LowerThan("1000"))
-	assert.True(t,mti.MTI("1000").LowerThan("1001"))
+	assert.False(t, mti.MTI("1000").LowerThan("0999"))
+	assert.False(t, mti.MTI("1000").LowerThan("1000"))
+	assert.True(t, mti.MTI("1000").LowerThan("1001"))
 }
 
 func TestMTI_LowerThan(t *testing.T) {
-	assert.True(t,mti.MTI("1000").HigherThan("0999"))
-	assert.False(t,mti.MTI("1000").HigherThan("1000"))
-	assert.False(t,mti.MTI("1000").HigherThan("1001"))
+	assert.True(t, mti.MTI("1000").HigherThan("0999"))
+	assert.False(t, mti.MTI("1000").HigherThan("1000"))
+	assert.False(t, mti.MTI("1000").HigherThan("1001"))
+}
+
+func TestMTI_LowerThan_Panics(t *testing.T) {
+	assert.Panics(t, func() { mti.MTI("AAAA").LowerThan("BBBB") })
 }

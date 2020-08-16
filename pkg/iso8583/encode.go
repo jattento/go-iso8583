@@ -26,6 +26,12 @@ import (
 // For example: `iso8583:"omitempty"`
 // - disesteem: if present will be ignores by Marshal().
 // For example: `iso8583:"-"`
+//
+// If you want to add a new encoding to use in the inbuilt types, just add them to the iso8583.MarshalEncodings
+// variable.
+//
+// If you want to add a completely new field, just copy the most similar from the existing one
+// and modify what ever you want.
 type Marshaler interface {
 	MarshalISO8583(length int, encoding string) ([]byte, error)
 }
@@ -55,6 +61,11 @@ func Marshal(v interface{}) ([]byte, error) {
 	var firstBitmap []byte
 	var fields = make(map[int][]byte)
 	var bitmaps = make(map[tags]MarshalerBitmap)
+	processedFields := make(map[string]struct{})
+
+	if v == nil {
+		return nil, errors.New("iso8583.marshal: nil input")
+	}
 
 	// Obtain value and type of input.
 	inputValue, inputType := reflectContext(v)
@@ -90,6 +101,13 @@ func Marshal(v interface{}) ([]byte, error) {
 			continue
 		}
 
+		// Check if field is repeated
+		if _, existsAlready := processedFields[tags.Field]; existsAlready {
+			return nil, fmt.Errorf("iso8583.marshal: field %s is repeated", tags.Field)
+		}
+
+		processedFields[tags.Field] = struct{}{}
+
 		// Bitmap fields are saved in a map, they must be marshaled at latest when all fields are known
 		if bmapInterface, isBitmapInterface := fieldValue.Interface().(MarshalerBitmap); isBitmapInterface {
 			bitmaps[*tags] = bmapInterface
@@ -109,22 +127,12 @@ func Marshal(v interface{}) ([]byte, error) {
 
 		// Check if bytes are mti, firstBitmap or a field value
 		if strings.ToLower(tags.Field) == _tagMTI {
-			// Same field can't be two time in same message.
-			if len(mti) > 0 {
-				return nil, fmt.Errorf("iso8583.marshal: field %s is repeated", _tagMTI)
-			}
-
 			mti = b
 			continue
 		}
 
 		// This block exist for cases where first bitmap does not implement iso8583.BitmapMarshaler.
 		if strings.ToLower(tags.Field) == _tagBITMAP {
-			// Same field can't be two time in same message.
-			if len(firstBitmap) > 0 {
-				return nil, fmt.Errorf("iso8583.marshal: field %s is repeated", _tagBITMAP)
-			}
-
 			firstBitmap = b
 			continue
 		}
@@ -144,10 +152,6 @@ func Marshal(v interface{}) ([]byte, error) {
 		// want to send mti or first bitmap but in case of a field it must be discarded here to avoid break
 		// bitmaps.
 		if len(b) > 0 {
-			if _, exist := fields[fk]; exist {
-				// Same field can't be two time in same message.
-				return nil, fmt.Errorf("iso8583.marshal: field %v is repeated", fk)
-			}
 			fields[fk] = b
 		}
 	}
@@ -155,6 +159,18 @@ func Marshal(v interface{}) ([]byte, error) {
 	// Resolve all bitmaps that implement iso8583.MarshalerBitmap once all fields are known.
 	if err := resolveBitmaps(fields, &firstBitmap, bitmaps); err != nil {
 		return nil, err
+	}
+
+	if len(mti) == 0 {
+		return nil, errors.New("iso8583.marshal: MTI not present")
+	}
+
+	if firstBitmap == nil {
+		return nil, errors.New("iso8583.marshal: first bitmap no present")
+	}
+
+	if len(firstBitmap) == 0 {
+		return nil, errors.New("iso8583.marshal: first bitmap present but without content")
 	}
 
 	// Order of bytes must be: mti -> first bitmap -> fields (include all other bitmaps).
@@ -258,11 +274,8 @@ func resolveBitmaps(fields map[int][]byte, firstBitmap *[]byte, bitmaps map[tags
 
 	sort.SliceStable(orderedBitmaps, func(i, j int) bool {
 		// first bitmap must be always element 0.
-		if orderedBitmaps[i].tag.Field == _tagBITMAP {
-			return true
-		}
-		if orderedBitmaps[j].tag.Field == _tagBITMAP {
-			return false
+		if orderedBitmaps[i].tag.Field == _tagBITMAP || orderedBitmaps[j].tag.Field == _tagBITMAP {
+			return orderedBitmaps[i].tag.Field == _tagBITMAP
 		}
 
 		// These errors are not accessible by the public api of this package
@@ -311,11 +324,6 @@ func resolveBitmaps(fields map[int][]byte, firstBitmap *[]byte, bitmaps map[tags
 			return fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", orderedBitmaps[n].tag.Field, err)
 		}
 
-		if len(b) == 0 {
-			// If length is 0m the field is ommited.
-			continue
-		}
-
 		if orderedBitmaps[n].tag.Field == _tagBITMAP {
 			// If field is first bitmap, its safed in indicated parameter pointer.
 			*firstBitmap = b
@@ -327,15 +335,15 @@ func resolveBitmaps(fields map[int][]byte, firstBitmap *[]byte, bitmaps map[tags
 		if err != nil {
 			return fmt.Errorf("iso8583: unrecognized field: %s", orderedBitmaps[n].tag.Field)
 		}
+
 		if fk == 0 {
 			return errors.New("iso8583.marshal: field 0 not allowed")
 		}
 
-		if _, exist := fields[fk]; exist {
-			return errors.New("iso8583.marshal: field can't be repeated")
+		if len(b) != 0 {
+			// If length is 0m the field is ommited.
+			fields[fk] = b
 		}
-
-		fields[fk] = b
 	}
 
 	return nil

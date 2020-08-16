@@ -19,6 +19,12 @@ import (
 // 64 representative bits. For example: `iso8583:"length:10"`
 // - encoding: arrives to the UnmarshalISO8583 method through parameter.
 // For example: `iso8583:"encoding:ascii"`
+//
+// If you want to add a new encoding to use in the inbuilt types, just add them to the iso8583.UnmarshalDecodings
+// variable.
+//
+// If you want to add a completely new field, just copy the most similar from the existing one
+// and modify what ever you want.
 type Unmarshaler interface {
 	// UnmarshalISO8583 should not modify the input slice.
 	// The input is the message starting from first yet not consumed byte to final.
@@ -53,7 +59,7 @@ type UnmarshalerBitmap interface {
 // returns the amount of bytes consumed from original message. If unused bytes remain from input
 // its not considerate an error.
 // If an error is encountered a counter with consumed bytes up to the moment is returned.
-func Unmarshal(data []byte, v interface{}) (int, error) {
+func Unmarshal(data []byte, v interface{}) (int, error) { // TODO: Check duplicated fieds
 	input := reflect.ValueOf(v)
 	// bitnapN works like an index that allows to know which fields are already
 	// mapped to a bitmap. For example: If bitmap = 10 means that all fields from 1 to 10
@@ -76,7 +82,8 @@ func Unmarshal(data []byte, v interface{}) (int, error) {
 	// consume reduces unconsumedBytes by the indicated amount with pointer safety.
 	consume := func(m int, f string) error {
 		if m > len(unconsumedBytes) {
-			return fmt.Errorf("iso8583.unmarshal: Unmarshaler from field %s returned a n higher than uncosumed "+
+			// This error can only be caused by bad unmarshal implementations
+			return fmt.Errorf("iso8583.unmarshal: Unmarshaler from field %s returned a n higher than unconsumed "+
 				"bytes", f)
 		}
 		unconsumedBytes = unconsumedBytes[m:]
@@ -155,7 +162,7 @@ func Unmarshal(data []byte, v interface{}) (int, error) {
 			return consumed(), err
 		}
 
-		if err := consume(m, strconv.Itoa(n)); err != nil {
+		if err := consume(m, "struct "+strconv.Itoa(n)); err != nil {
 			return consumed(), err
 		}
 
@@ -231,10 +238,15 @@ func getUnmarshaler(v reflect.Value, n string) (Unmarshaler, *tags, error) {
 	var vField reflect.Value
 	for index, strctType := 0, strct.Type(); index < strctType.NumField(); index++ {
 		if tags := readTags(strctType.Field(index).Tag); tags != nil && tags.Field == n {
+			if !reflect.ValueOf(vField).IsZero() {
+				return nil, nil, fmt.Errorf("iso8583.marshal: field %v is repeteated in struct", n)
+			}
+
 			vField = strct.Field(index)
 			if vField.Kind() != reflect.Ptr {
 				vField = vField.Addr()
 			}
+
 			tag = tags
 		}
 	}
@@ -249,7 +261,7 @@ func getUnmarshaler(v reflect.Value, n string) (Unmarshaler, *tags, error) {
 	field, isValidUnmarshaler := vField.Interface().(Unmarshaler)
 	if !isValidUnmarshaler {
 		return nil, nil, fmt.Errorf(
-			"iso8583.unmarshal: %s is present is struct but does not implement Unmarshaler interface", n)
+			"iso8583.unmarshal: %s is present and its a struct but does not implement Unmarshaler interface", n)
 	}
 
 	// Return field data.
@@ -259,15 +271,7 @@ func getUnmarshaler(v reflect.Value, n string) (Unmarshaler, *tags, error) {
 // getBitsMethod searches a iso8583.UnmarshalerBitmap implementation and returns it Bits method.
 func getBitsMethod(strct reflect.Value, fieldName string) (func() (map[int]bool, error), error) {
 	// Reuse getUnmarshaler because iso8583.Unmarshaler contains iso8583.UnmarshalerBitmap
-	bitmapUnmarshaler, _, err := getUnmarshaler(strct, fieldName)
-	if err != nil {
-		return nil, err
-	}
-
-	// Field must be present.
-	if bitmapUnmarshaler == nil {
-		return nil, fmt.Errorf("iso8583.unmarshal: %s field is not present", fieldName)
-	}
+	bitmapUnmarshaler, _, _ := getUnmarshaler(strct, fieldName)
 
 	// Field must implement iso8583.UnmarshalerBitmap.
 	bitmap, ok := bitmapUnmarshaler.(UnmarshalerBitmap)
