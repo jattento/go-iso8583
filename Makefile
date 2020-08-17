@@ -1,6 +1,5 @@
 ### Required tools
 GOTOOLS_CHECK = golangci-lint
-PACKAGES_PATH = $(shell go list -f '{{ .Dir }}' ./...)
 
 all: fmt ensure-deps linter test
 
@@ -19,13 +18,14 @@ test-integration:
 fmt:
 	go fmt ./...
 
+ensure-deps:
+	@echo "==> Running go mod tidy"
+	go mod download
+	go mod tidy
+
 linter:
 	@echo "==> Running linter"
 	golangci-lint run ./...
-
-ensure-deps:
-	@echo "==> Running go mod tidy"
-	go mod tidy
 
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
