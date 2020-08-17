@@ -106,7 +106,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 			InputLength:   4,
 			OutputContent: "",
 			OutputError:   "encoder 'force_error' returned error: forced_error",
-			InputBytes:    []byte{1,1,1,1,1},
+			InputBytes:    []byte{1, 1, 1, 1, 1},
 		},
 		{
 			Name:          "len_shorter_than_length_error",
@@ -126,7 +126,7 @@ func TestMTI_UnmarshalISO8583(t *testing.T) {
 		},
 	}
 
-	iso8583.UnmarshalDecodings["force_error"] = func(bytes []byte) ([]byte, error) {return nil, errors.New("forced_error")}
+	iso8583.UnmarshalDecodings["force_error"] = func(bytes []byte) ([]byte, error) { return nil, errors.New("forced_error") }
 	defer delete(iso8583.UnmarshalDecodings, "force_error")
 
 	for _, testCase := range testList {

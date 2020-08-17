@@ -15,7 +15,7 @@ func (v VAR) MarshalISO8583(length int, enc string) ([]byte, error) {
 	content := []byte(v)
 
 	content, err := applyEncoding(content, enc, MarshalEncodings)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func (v *VAR) UnmarshalISO8583(b []byte, length int, enc string) (int, error) {
 	copy(byt, b[:length])
 
 	byt, err := applyEncoding(byt, enc, UnmarshalDecodings)
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 

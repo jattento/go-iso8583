@@ -12,7 +12,6 @@ type entry struct {
 	EBCDIC         byte
 	ASCII          byte
 	representation rune
-	description    string
 }
 
 const NULL = 0x0
@@ -23,9 +22,8 @@ func (v *version) FromGoString(s string) []byte {
 		v.generateEncodingMap()
 	}
 
-	rs := []rune(s)
 	output := make([]byte, 0)
-	for _, r := range rs {
+	for _, r := range s {
 		func() {
 			for k, v := range v.encoding {
 				if k == r {
@@ -47,12 +45,12 @@ func (v *version) ToGoString(b []byte) string {
 
 	output := make([]rune, 0)
 	for _, byt := range b {
-			for k, v := range v.decoding {
-				if k == byt {
-					output = append(output, v)
-					break
-				}
+		for k, v := range v.decoding {
+			if k == byt {
+				output = append(output, v)
+				break
 			}
+		}
 	}
 	return string(output)
 }
