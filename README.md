@@ -1,3 +1,6 @@
+[![codecov](https://codecov.io/gh/jattento/go-iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/jattento/go-iso8583)
+[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)
+
 # go-iso8583
 
 An easy to use, yet flexible marshaler for ISO-8583
@@ -6,7 +9,9 @@ This library provides:
 - Marshal and Unmarshal functions with his respective interfaces
 including MTI, VAR, LLVAR, LLLVAR and bitmaps fields ready for use
 but with the possibility to easily add new field types.
-- Inbuid Support for ASCII, BCD and EBCDIC but not limited to them
+- Inbuid Support for ASCII and EBCDIC but not limited to them
+
+API [godoc](https://godoc.org/github.com/jattento/go-iso8583/pkg/iso8583) documentation
 
 ## Installation
 
