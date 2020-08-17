@@ -13,7 +13,6 @@ const (
 	_bitsInByte   = 8
 
 	_firstByteIndex = 0
-	_lastByteIndex  = 7
 	_firstBitOffset = 7
 	_lastBitOffset  = 0
 )

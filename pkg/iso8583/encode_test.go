@@ -295,9 +295,9 @@ func TestMarshal(t *testing.T) {
 				[]byte("16"), []byte("1234567891234567"), // MTI
 				[]byte{0xb0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0x0}, // First bitmap
 				[]byte{0x42, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0}, // Second bitmap
-				[]byte("1000"),                                  // Processing code
-				[]byte("0001000"),                               // Amount
-				[]byte("017"), []byte("ABCDEFGH123456789"),      // ICC
+				[]byte("1000"),                             // Processing code
+				[]byte("0001000"),                          // Amount
+				[]byte("017"), []byte("ABCDEFGH123456789"), // ICC
 				[]byte("8"),               // Settlement code
 				[]byte("1"),               // Message number
 				[]byte("JUST A PURCHASE"), // Transaction Descriptor

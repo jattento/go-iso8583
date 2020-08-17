@@ -180,7 +180,7 @@ func TestLLVAR_UnmarshalISO8583(t *testing.T) {
 
 			n, err := v.UnmarshalISO8583(testCase.InputBytes, testCase.InputLength, testCase.InputEncoding)
 			if testCase.OutputError != "" {
-				if assert.NotNil(t,err){
+				if assert.NotNil(t, err) {
 					assert.Equal(t, err.Error(), testCase.OutputError)
 				}
 			} else {

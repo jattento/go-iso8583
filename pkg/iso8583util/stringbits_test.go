@@ -44,7 +44,7 @@ func TestStringBitsToBytes(t *testing.T) {
 	}
 
 	for _, testCase := range testList {
-		t.Run(fmt.Sprintf("string_bits_to_bytes"), func(t *testing.T) {
+		t.Run("string_bits_to_bytes", func(t *testing.T) {
 			expected := strings.ReplaceAll(testCase.input, " ", "")
 			for len(expected)%8 != 0 {
 				expected += "0"
@@ -61,27 +61,27 @@ func TestBytesToStringBits(t *testing.T) {
 		input []byte
 	}{
 		{
-			input: []byte{12,3,4,5,6,76,87,89,9,6,5,4,1,1},
+			input: []byte{12, 3, 4, 5, 6, 76, 87, 89, 9, 6, 5, 4, 1, 1},
 		},
 		{
 			input: []byte{200},
 		},
 		{
-			input: []byte{128,128,128},
+			input: []byte{128, 128, 128},
 		},
 		{
-			input: []byte{1,1,1,1,1,1,},
+			input: []byte{1, 1, 1, 1, 1, 1},
 		},
 		{
 			input: []byte{221},
 		},
 		{
-			input: []byte{12,101,51,41,57,71,211,200,219},
+			input: []byte{12, 101, 51, 41, 57, 71, 211, 200, 219},
 		},
 	}
 
 	for _, testCase := range testList {
-		t.Run(fmt.Sprintf("string_bits_to_bytes"), func(t *testing.T) {
+		t.Run("string_bits_to_bytes", func(t *testing.T) {
 			assert.Equal(t, strings.TrimSuffix(strings.TrimPrefix(
 				fmt.Sprintf("%08b", testCase.input), "["), "]"),
 				iso8583util.BytesToStringBits(testCase.input, true))
@@ -93,5 +93,5 @@ func TestBytesToStringBits(t *testing.T) {
 }
 
 func TestStringBitsToBytes_Panic(t *testing.T) {
-	assert.Panics(t, func() {iso8583util.StringBitsToBytes("whale_song")})
+	assert.Panics(t, func() { iso8583util.StringBitsToBytes("whale_song") })
 }

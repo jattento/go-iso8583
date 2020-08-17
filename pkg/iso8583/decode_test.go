@@ -148,10 +148,10 @@ func TestUnmarshal(t *testing.T) {
 			},
 			ExpectedOutputError: "",
 			InputByte: appendBytes(
-				[]byte("1000"),                                  // MTI
+				[]byte("1000"), // MTI
 				[]byte{0xf0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0x0}, // First bitmap
 				[]byte{0x42, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0}, // Second bitmap
-				[]byte("16"), []byte("1234567891234567"),        // PAN
+				[]byte("16"), []byte("1234567891234567"), // PAN
 				[]byte("1000"),                             // Processing code
 				[]byte("0001000"),                          // Amount
 				[]byte("017"), []byte("ABCDEFGH123456789"), // ICC

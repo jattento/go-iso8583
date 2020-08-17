@@ -108,5 +108,5 @@ func lengthUnmarshal(l int, b []byte, length int, enc string) (string, int, erro
 
 	return strings.TrimFunc(string(varContent), func(r rune) bool {
 		return !unicode.IsGraphic(r)
-	}), length+llValue, nil
+	}), length + llValue, nil
 }
