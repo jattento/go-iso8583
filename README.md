@@ -1,4 +1,5 @@
 [![codecov](https://codecov.io/gh/jattento/go-iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/jattento/go-iso8583)
+[![Maintainability](https://api.codeclimate.com/v1/badges/94a2058a2b0823cf31be/maintainability)](https://codeclimate.com/github/jattento/go-iso8583/maintainability)
 
 | Version   |      Build      |
 |----------|:-------------:|
@@ -35,7 +36,7 @@ import "github.com/jattento/go-iso8583/pkg/iso8583"
 ## Quick start
 
 ```go
-import "github.com/go-iso8583/pkg/iso8583"
+import "github.com/jattento/go-iso8583/pkg/iso8583"
 
 type PurchaseRequest struct {
 	MTI                    iso8583.MTI    `iso8583:"mti"`
@@ -77,7 +78,7 @@ func GenerateStaticReqBytes() ([]byte, error) {
 ```
 
 ```go
-import "github.com/go-iso8583/pkg/iso8583"
+import "github.com/jattento/go-iso8583/pkg/iso8583"
 
 type PurchaseResponse struct {
 	MTI                    iso8583.MTI    `iso8583:"mti,length:4"`

@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO Nil field test case
-// TODO second bitmap only if follow field are present
 func TestMarshal(t *testing.T) {
 	exampleString := iso8583.VAR("1234")
 	testList := []struct {
@@ -328,7 +326,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field0: "12345",
 			},
-			OutputError: "iso8583.marshal: field 0 not allowed",
+			OutputError: "iso8583.marshal: invalid field name: 0",
 			OutputBytes: nil,
 		},
 		{
@@ -359,7 +357,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1234",
 			},
-			OutputError: "iso8583.marshal: field asd does not have a valid field name",
+			OutputError: "iso8583.marshal: invalid field name: asd",
 			OutputBytes: nil,
 		},
 		{
@@ -378,7 +376,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1234",
 			},
-			OutputError: "iso8583.marshal: field mti does not have a valid length",
+			OutputError: "iso8583.marshal: field mti: invalid length: strconv.Atoi: parsing \"a\": invalid syntax",
 			OutputBytes: nil,
 		},
 		{
@@ -457,7 +455,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1",
 			},
-			OutputError: "iso8583.marshal: field bitmap is implements bitmap interface and does not have a valid length",
+			OutputError: "iso8583.marshal: field bitmap: invalid length: strconv.Atoi: parsing \"a\": invalid syntax",
 			OutputBytes: nil,
 		},
 		{
@@ -469,7 +467,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1",
 			},
-			OutputError: "iso8583.marshal: first bitmap present but without content",
+			OutputError: "iso8583.marshal: no first bitmap was generated",
 			OutputBytes: nil,
 		},
 		{
@@ -482,7 +480,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1",
 			},
-			OutputError: "iso8583: unrecognized field: bmap",
+			OutputError: "iso8583.marshal: invalid field name: bmap",
 			OutputBytes: nil,
 		},
 		{
@@ -494,7 +492,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1",
 			},
-			OutputError: "iso8583.marshal: field 0 not allowed",
+			OutputError: "iso8583.marshal: invalid field name: 0",
 			OutputBytes: nil,
 		},
 		{
@@ -517,7 +515,7 @@ func TestMarshal(t *testing.T) {
 			Input: struct {
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 			}{},
-			OutputError: "iso8583.marshal: MTI not present",
+			OutputError: "iso8583.marshal: no MTI was generated",
 			OutputBytes: nil,
 		},
 		{
@@ -528,7 +526,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: "1",
 			},
-			OutputError: "iso8583.marshal: first bitmap no present",
+			OutputError: "iso8583.marshal: no first bitmap was generated",
 			OutputBytes: nil,
 		},
 		{

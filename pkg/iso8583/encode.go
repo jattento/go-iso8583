@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 // Marshaler interface for iso8583 fields.
@@ -57,10 +56,6 @@ type MarshalerBitmap interface {
 // If field is a string with valid tags and does not implement Marshaler ascii encoding is assumed.
 // If field is a []byte with valid tags and does not implement Marshaler, its content is used as value.
 func Marshal(v interface{}) ([]byte, error) {
-	var mti []byte
-	var firstBitmap []byte
-	var fields = make(map[int][]byte)
-	var bitmaps = make(map[tags]MarshalerBitmap)
 	processedFields := make(map[string]struct{})
 
 	if v == nil {
@@ -68,128 +63,61 @@ func Marshal(v interface{}) ([]byte, error) {
 	}
 
 	// Obtain value and type of input.
-	inputValue, inputType := reflectContext(v)
+	inputValue := reflect.ValueOf(v)
+	for inputValue.Kind() == reflect.Ptr {
+		inputValue = inputValue.Elem()
+	}
 
 	// Input must be a struct or a pointer to one.
-	if inputType.Kind() != reflect.Struct {
+	if inputValue.Kind() != reflect.Struct {
 		return nil, errors.New("iso8583.marshal: input is not a struct or is pointing to one")
 	}
 
+	msg := newMarshalerMessage()
+
 	// Iterate over all fields of input struct.
-	for index := 0; index < inputType.NumField(); index++ {
-		fieldValue := inputValue.Field(index)
-		fieldType := inputType.Field(index)
-
-		// If field is nil its not considerated for marshaling.
-		if isNil(fieldValue) {
+	for index := 0; index < inputValue.Type().NumField(); index++ {
+		structFieldValue, tag, err := getStructFieldData(inputValue, index)
+		if errors.Is(err, errUnexportedField) || errors.Is(err, errAnonymousField) || errors.Is(err, errTagsNotFound) ||
+			tag.Disesteem || isNil(structFieldValue) {
 			continue
 		}
 
-		// If field is a pointer Elem() its applied.
-		for fieldValue.Kind() == reflect.Ptr {
-			fieldValue = fieldValue.Elem()
+		if err != nil {
+			return nil, fmt.Errorf("iso8583.marshal: %w", err)
 		}
 
-		// Only exported and non-anonymous field are considerated.
-		if fieldType.PkgPath != "" || fieldType.Anonymous {
-			continue
-		}
-
-		// Read tags from current field, if there aren't field is ignored.
-		tags := readTags(fieldType.Tag)
-		if tags == nil || tags.Disesteem {
-			continue
+		if tag.Field != _tagMTI && tag.Field != _tagBITMAP {
+			// Validate field names
+			n, err := strconv.Atoi(tag.Field)
+			if err != nil || n < 1 {
+				return nil, fmt.Errorf("iso8583.marshal: invalid field name: %s", tag.Field)
+			}
 		}
 
 		// Check if field is repeated
-		if _, existsAlready := processedFields[tags.Field]; existsAlready {
-			return nil, fmt.Errorf("iso8583.marshal: field %s is repeated", tags.Field)
+		if _, existsAlready := processedFields[tag.Field]; existsAlready {
+			return nil, fmt.Errorf("iso8583.marshal: field %s is repeated", tag.Field)
 		}
 
-		processedFields[tags.Field] = struct{}{}
+		processedFields[tag.Field] = struct{}{}
 
 		// Bitmap fields are saved in a map, they must be marshaled at latest when all fields are known
-		if bmapInterface, isBitmapInterface := fieldValue.Interface().(MarshalerBitmap); isBitmapInterface {
-			bitmaps[*tags] = bmapInterface
+		bmapInterface, isBitmapInterface := structFieldValue.Interface().(MarshalerBitmap)
+		if isBitmapInterface {
+			msg.addBitmap(bmapInterface, tag)
 			continue
 		}
 
 		// If omitempty tag is present and field value is zero value the field is ignored.
-		if tags.OmitEmpty && fieldValue.IsZero() {
+		if tag.OmitEmpty && structFieldValue.IsZero() {
 			continue
 		}
 
-		// Resolve field value that not necessary implements iso8583.Marshaler interface.
-		b, err := resolveMarshalFieldValue(fieldValue, *tags)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if bytes are mti, firstBitmap or a field value
-		if strings.ToLower(tags.Field) == _tagMTI {
-			mti = b
-			continue
-		}
-
-		// This block exist for cases where first bitmap does not implement iso8583.BitmapMarshaler.
-		if strings.ToLower(tags.Field) == _tagBITMAP {
-			firstBitmap = b
-			continue
-		}
-
-		// If field isn't MTI or BITMAP its name must be numeric.
-		fk, err := tags.fieldINT()
-		if err != nil {
-			return nil, err
-		}
-
-		// 0 is not a valid field key for iso fields.
-		if fk == 0 {
-			return nil, errors.New("iso8583.marshal: field 0 not allowed")
-		}
-
-		// Length of marshal result is check here because maybe under strange condition the implementation don't
-		// want to send mti or first bitmap but in case of a field it must be discarded here to avoid break
-		// bitmaps.
-		if len(b) > 0 {
-			fields[fk] = b
-		}
+		msg.addField(structFieldValue, tag)
 	}
 
-	// Resolve all bitmaps that implement iso8583.MarshalerBitmap once all fields are known.
-	if err := resolveBitmaps(fields, &firstBitmap, bitmaps); err != nil {
-		return nil, err
-	}
-
-	if len(mti) == 0 {
-		return nil, errors.New("iso8583.marshal: MTI not present")
-	}
-
-	if firstBitmap == nil {
-		return nil, errors.New("iso8583.marshal: first bitmap no present")
-	}
-
-	if len(firstBitmap) == 0 {
-		return nil, errors.New("iso8583.marshal: first bitmap present but without content")
-	}
-
-	// Order of bytes must be: mti -> first bitmap -> fields (include all other bitmaps).
-	return append(append(append([]byte{}, mti...), firstBitmap...), fieldsToBytes(fields)...), nil
-}
-
-// reflectContext returns the underlying type and value.
-// Elem() its applied up to to ground type.
-func reflectContext(i interface{}) (reflect.Value, reflect.Type) {
-	value := reflect.ValueOf(i)
-	Type := reflect.TypeOf(i)
-
-	// Check that input is a struct or is pointing to one
-	for Type.Kind() == reflect.Ptr {
-		Type = Type.Elem()
-		value = value.Elem()
-	}
-
-	return value, Type
+	return msg.Bytes()
 }
 
 // resolveMarshalFieldValue resolves Marshal return value of a field that must not necessary be a marshaler.
@@ -198,19 +126,10 @@ func resolveMarshalFieldValue(v reflect.Value, tag tags) ([]byte, error) {
 	isBytes := v.Kind() == reflect.Slice && v.Type() == reflect.TypeOf([]byte(nil))
 	isString := v.Kind() == reflect.String
 
-	var length int
-	if tag.Length != "" {
-		var err error
-		length, err = tag.lenINT()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// Priority of marshaling order is marshaler -> bytes -> string
 	switch {
 	case isMarshaler:
-		b, err := marshaler.MarshalISO8583(length, tag.Encoding)
+		b, err := marshaler.MarshalISO8583(tag.Length, tag.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", tag.Field, err)
 		}
@@ -228,132 +147,197 @@ func resolveMarshalFieldValue(v reflect.Value, tag tags) ([]byte, error) {
 
 }
 
-// transform the fields map to []byte using the correct order
-func fieldsToBytes(m map[int][]byte) []byte {
-	fieldsByte := make([]byte, 0)
+// isNil Checks the kind of the value since reflect.IsNil method could panic at some.
+func isNil(v reflect.Value) (isNil bool) {
+	reflectKind := v.Kind()
 
-	// Every loop fiends the lowest key
-	for n, lenFields := 0, len(m); n < lenFields; n++ {
-		var lowestField int
-		firstIteration := true
-
-		for fieldKey := range m {
-			if firstIteration {
-				lowestField = fieldKey
-				firstIteration = false
-				continue
-			}
-			if fieldKey < lowestField {
-				lowestField = fieldKey
-			}
+	for _, kind := range []reflect.Kind{
+		reflect.Ptr, reflect.Map, reflect.Chan, reflect.Func, reflect.UnsafePointer, reflect.Interface, reflect.Slice,
+	} {
+		if reflectKind == kind {
+			isNil = v.IsNil()
 		}
-
-		// Value from lowest key is added at the end of the slice and key is deleted from map
-		// to avoid duplicity.
-		fieldsByte = append(fieldsByte, m[lowestField]...)
-		delete(m, lowestField)
 	}
 
-	return fieldsByte
+	return isNil
+}
+
+// field represents a iso8583 field in bytes format
+type field struct {
+	name  string
+	bytes []byte
+}
+
+// marshalerMessage represents a iso8583 message before its marshaled
+type marshalerMessage struct {
+	Bitmaps []isoMarshalerBitmap
+	Fields  []isoMarshalerField
+}
+
+// isoMarshalerField represents a iso8583 field before its marshaled
+type isoMarshalerField struct {
+	Marshaler reflect.Value
+	tags
+}
+
+// isoMarshalerBitmap represents a iso8583 field (that implements the marshaler bitmap interface) before its marshaled
+type isoMarshalerBitmap struct {
+	MarshalerBitmap
+	tags
+}
+
+// newMarshalerMessage returns a empty message
+func newMarshalerMessage() *marshalerMessage {
+	return &marshalerMessage{
+		Fields:  make([]isoMarshalerField, 0),
+		Bitmaps: make([]isoMarshalerBitmap, 0),
+	}
+}
+
+// addField adds a field to the current message
+func (m *marshalerMessage) addField(marsh reflect.Value, tag tags) {
+	m.Fields = append(m.Fields, isoMarshalerField{Marshaler: marsh, tags: tag})
+}
+
+// addBitmap add a bitmap to the current message
+func (m *marshalerMessage) addBitmap(marsh MarshalerBitmap, tag tags) {
+	m.Bitmaps = append(m.Bitmaps, isoMarshalerBitmap{MarshalerBitmap: marsh, tags: tag})
+}
+
+// Bytes returns the actually ISO8583 formatted message.
+func (m *marshalerMessage) Bytes() (messageBytes []byte, returnErr error) {
+	var (
+		mtiPresent         bool
+		firstBitmapPresent bool
+	)
+
+	fields := make([]field, 0)
+
+	// Iterate over all fields that NOT implement marshaler bitmap
+	for _, f := range m.Fields {
+		b, err := resolveMarshalFieldValue(f.Marshaler, f.tags)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(b) > 0 {
+			if f.Field == _tagMTI {
+				mtiPresent = true
+			}
+
+			if f.Field == _tagBITMAP {
+				firstBitmapPresent = true
+			}
+
+			fields = append(fields, field{name: f.Field, bytes: b})
+		}
+	}
+
+	// Resolve bitmaps; starting from last to first.
+	firstBmapInMarshaler, err := m.resolveMarshalerBitmaps(&fields)
+	if err != nil {
+		return nil, err
+	}
+
+	firstBitmapPresent = firstBmapInMarshaler || firstBitmapPresent
+
+	// Sort fields
+	sortFieldsStable(fields, func(index int) string { return fields[index].name })
+
+	// Build message
+	messageBytes = make([]byte, 0)
+	for _, f := range fields {
+		messageBytes = append(messageBytes, f.bytes...)
+	}
+
+	// Valdiate MTI and first bitmap presence
+	if !firstBitmapPresent {
+		returnErr = errors.New("iso8583.marshal: no first bitmap was generated")
+	}
+
+	if !mtiPresent {
+		returnErr = errors.New("iso8583.marshal: no MTI was generated")
+	}
+
+	return messageBytes, returnErr
 }
 
 // Resolve bitmaps marshal values.
 // Reads bitmaps from "bitmaps" parameter and save them in "fields" and "firstBitmap" variables.
-func resolveBitmaps(fields map[int][]byte, firstBitmap *[]byte, bitmaps map[tags]MarshalerBitmap) error {
-	type bitmap struct {
-		tag      tags
-		value    MarshalerBitmap
-		capacity int
-	}
+func (m *marshalerMessage) resolveMarshalerBitmaps(fields *[]field) (bool, error) {
+	var firstBitmapPresent bool
 
-	// Create slice of bitmaps and
-	var orderedBitmaps []bitmap
-	for t, m := range bitmaps {
-		orderedBitmaps = append(orderedBitmaps, bitmap{tag: t, value: m})
-	}
-
-	sort.SliceStable(orderedBitmaps, func(i, j int) bool {
-		// first bitmap must be always element 0.
-		if orderedBitmaps[i].tag.Field == _tagBITMAP || orderedBitmaps[j].tag.Field == _tagBITMAP {
-			return orderedBitmaps[i].tag.Field == _tagBITMAP
-		}
-
-		// These errors are not accessible by the public api of this package
-		ii, _ := strconv.Atoi(orderedBitmaps[i].tag.Field)
-		ji, _ := strconv.Atoi(orderedBitmaps[j].tag.Field)
-
-		return ji > ii
-	})
-
-	// Add capacity to every bitmap struct
-	for n := 0; n < len(orderedBitmaps); n++ {
-		l, err := strconv.Atoi(orderedBitmaps[n].tag.Length)
-		if err != nil {
-			return fmt.Errorf("iso8583.marshal: field %s is implements bitmap interface and "+
-				"does not have a valid length", orderedBitmaps[n].tag.Field)
-		}
-		orderedBitmaps[n].capacity = l
-	}
+	sortFieldsStable(m.Bitmaps, func(index int) string { return m.Bitmaps[index].Field })
 
 	// Resolve all bitmaps starting from last one to first,
 	// this is because every bitmaps indicates the presence of the next one.
-	for n := len(orderedBitmaps) - 1; n >= 0; n-- {
-		startPosition := 1
-		for m := n - 1; m >= 0; m-- {
-			startPosition += orderedBitmaps[m].capacity
-		}
-
-		// Create new map and only add elements that apply to the current bitmap.
-		present := make(map[int]bool)
-		for f := range fields {
-			if f >= startPosition && f < startPosition+orderedBitmaps[n].capacity {
-				present[f-startPosition+1] = true
-			}
-		}
-
-		// All none selected bits under the capacity are setted false.
-		for m := 1; m <= orderedBitmaps[n].capacity; m++ {
-			if _, exist := present[m]; !exist {
-				present[m] = false
-			}
-		}
-
+	for n := len(m.Bitmaps) - 1; n >= 0; n-- {
 		// Marshal bitmap...
-		b, err := orderedBitmaps[n].value.MarshalISO8583Bitmap(present, orderedBitmaps[n].tag.Encoding)
+		b, err := m.Bitmaps[n].MarshalerBitmap.MarshalISO8583Bitmap(m.createBitmapMarshalerInput(*fields, n), m.Bitmaps[n].tags.Encoding)
 		if err != nil {
-			return fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", orderedBitmaps[n].tag.Field, err)
+			return false, fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", m.Bitmaps[n].tags.Field, err)
 		}
 
-		if orderedBitmaps[n].tag.Field == _tagBITMAP {
-			// If field is first bitmap, its safed in indicated parameter pointer.
-			*firstBitmap = b
+		if len(b) > 0 {
+			if m.Bitmaps[n].Field == _tagBITMAP {
+				firstBitmapPresent = true
+			}
+
+			*fields = append(*fields, field{name: m.Bitmaps[n].Field, bytes: b})
+		}
+	}
+
+	return firstBitmapPresent, nil
+}
+
+func (m *marshalerMessage) createBitmapMarshalerInput(fields []field, bitmapIndex int) map[int]bool {
+	startPosition := 1
+	for nn := bitmapIndex - 1; nn >= 0; nn-- {
+		startPosition += m.Bitmaps[nn].tags.Length
+	}
+
+	// Create new map and only add elements that apply to the current bitmap.
+	present := make(map[int]bool)
+	for _, f := range fields {
+		if f.name == _tagMTI {
 			continue
 		}
 
-		// For all other cases, its added in the map along with all other fields.
-		fk, err := strconv.Atoi(orderedBitmaps[n].tag.Field)
-		if err != nil {
-			return fmt.Errorf("iso8583: unrecognized field: %s", orderedBitmaps[n].tag.Field)
-		}
+		// Already checked
+		numericName, _ := strconv.Atoi(f.name)
 
-		if fk == 0 {
-			return errors.New("iso8583.marshal: field 0 not allowed")
-		}
-
-		if len(b) != 0 {
-			// If length is 0m the field is ommited.
-			fields[fk] = b
+		if numericName >= startPosition && numericName < startPosition+m.Bitmaps[bitmapIndex].Length {
+			present[numericName-startPosition+1] = true
 		}
 	}
 
-	return nil
+	// All none selected bits under the capacity are setted false.
+	for nn := 1; nn <= m.Bitmaps[bitmapIndex].Length; nn++ {
+		if _, exist := present[nn]; !exist {
+			present[nn] = false
+		}
+	}
+
+	return present
 }
 
-func isNil(v reflect.Value) bool {
-	if k := v.Kind(); k == reflect.Ptr || k == reflect.Map || k == reflect.Chan || k == reflect.Func ||
-		k == reflect.UnsafePointer || k == reflect.Interface || k == reflect.Slice {
-		return v.IsNil()
-	}
+// sortFieldsStable sorts message fields in the following order: MTI -> BITMAP -> field 0 -> field n-1 -> field n
+func sortFieldsStable(obj interface{}, getFieldName func(index int) string) {
+	sort.SliceStable(obj, func(i, j int) bool {
+		// first bitmap must be always element 0.
+		if getFieldName(i) == _tagMTI || getFieldName(j) == _tagMTI {
+			return getFieldName(i) == _tagMTI
+		}
 
-	return false
+		// first bitmap must be always be second.
+		if getFieldName(i) == _tagBITMAP || getFieldName(j) == _tagBITMAP {
+			return getFieldName(i) == _tagBITMAP
+		}
+
+		// These errors are not accessible by the public api of this package
+		ii, _ := strconv.Atoi(getFieldName(i))
+		ji, _ := strconv.Atoi(getFieldName(j))
+
+		return ji > ii
+	})
 }

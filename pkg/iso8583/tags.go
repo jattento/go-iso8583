@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -12,20 +13,39 @@ type tags struct {
 	OmitEmpty bool
 	Disesteem bool
 	Encoding  string
-	Length    string
+	Length    int
 }
 
 const _tagBITMAP = "bitmap"
 const _tagMTI = "mti"
 
-// If a nil pointer to tag struct is returned
-// the current field should be omitted.
-func readTags(tag reflect.StructTag) *tags {
+var (
+	errUnexportedField = errors.New("unexported field")
+	errAnonymousField  = errors.New("anonymous field")
+	errTagsNotFound    = errors.New("ISO8583 tags not found")
+)
+
+func searchTags(field reflect.StructField) (tags, error) {
+	// Only exported and non-anonymous field are considered.
+	if field.PkgPath != "" {
+		return tags{}, errUnexportedField
+	}
+
+	if field.Anonymous {
+		return tags{}, errAnonymousField
+	}
+
+	return readTags(field.Tag)
+}
+
+// If a nil pointer is returned the ISO8583 tag is not present.
+func readTags(tag reflect.StructTag) (tags, error) {
 	var output tags
+	var returnErr error
 	rawTags, exist := tag.Lookup("iso8583")
 	if !exist {
 		// Only fields with iso8583 tags are considerate.
-		return nil
+		return tags{}, errTagsNotFound
 	}
 
 	// Search for provided tags...
@@ -42,7 +62,15 @@ func readTags(tag reflect.StructTag) *tags {
 		}
 
 		if strings.HasPrefix(tagBlock, "length") && len(strings.Split(tagBlock, ":")) == 2 {
-			output.Length = strings.TrimPrefix(tagBlock, "length:")
+			strLenght := strings.TrimPrefix(tagBlock, "length:")
+
+			l, err := strconv.Atoi(strLenght)
+			if err != nil {
+				returnErr = fmt.Errorf("invalid length: %w", err)
+			}
+
+			output.Length = l
+
 			continue
 		}
 
@@ -54,22 +82,13 @@ func readTags(tag reflect.StructTag) *tags {
 		output.Field = tagBlock
 	}
 
-	return &output
-}
-
-func (t tags) lenINT() (int, error) {
-	l, err := strconv.Atoi(t.Length)
-	if err != nil {
-		return 0, fmt.Errorf("iso8583.marshal: field %s does not have a valid length", t.Field)
+	if output.Field == "" {
+		return output, errors.New("exported struct field contains ISO8583 tag but no field name")
 	}
-	return l, nil
-}
 
-// fieldINT does not considerate the possibility of field names "bitmap" and "mti", which should be checked outside.
-func (t tags) fieldINT() (int, error) {
-	f, err := strconv.Atoi(t.Field)
-	if err != nil {
-		return 0, fmt.Errorf("iso8583.marshal: field %s does not have a valid field name", t.Field)
+	if returnErr != nil {
+		return output, fmt.Errorf("field %s: %w", output.Field, returnErr)
 	}
-	return f, nil
+
+	return output, nil
 }
