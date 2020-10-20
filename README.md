@@ -31,7 +31,7 @@ import "github.com/jattento/go-iso8583/pkg/iso8583"
 ## Quick start
 
 ```go
-import "github.com/go-iso8583/pkg/iso8583"
+import "github.com/jattento/go-iso8583/pkg/iso8583"
 
 type PurchaseRequest struct {
 	MTI                    iso8583.MTI    `iso8583:"mti"`
@@ -73,7 +73,7 @@ func GenerateStaticReqBytes() ([]byte, error) {
 ```
 
 ```go
-import "github.com/go-iso8583/pkg/iso8583"
+import "github.com/jattento/go-iso8583/pkg/iso8583"
 
 type PurchaseResponse struct {
 	MTI                    iso8583.MTI    `iso8583:"mti,length:4"`
