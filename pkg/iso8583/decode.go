@@ -47,6 +47,8 @@ type UnmarshalerBitmap interface {
 	Bits() (m map[int]bool, err error)
 }
 
+var errStructFieldNonExistent = errors.New("non existent struct field")
+
 // Unmarshal parses the ISO-8583 data and stores the result
 // in the struct pointed to by v. If v is nil or not a pointer to a struct,
 // Unmarshal returns an error.
@@ -59,8 +61,8 @@ type UnmarshalerBitmap interface {
 // returns the amount of bytes consumed from original message. If unused bytes remain from input
 // its not considerate an error.
 // If an error is encountered a counter with consumed bytes up to the moment is returned.
-func Unmarshal(data []byte, v interface{}) (int, error) { // TODO: Check duplicated fieds
-	input := reflect.ValueOf(v)
+func Unmarshal(data []byte, v interface{}) (int, error) {
+	strctInput := reflect.ValueOf(v)
 	// bitnapN works like an index that allows to know which fields are already
 	// mapped to a bitmap. For example: If bitmap = 10 means that all fields from 1 to 10
 	// are contemplated by already unmarshaled bitmaps and the next bitmap should consider
@@ -69,76 +71,35 @@ func Unmarshal(data []byte, v interface{}) (int, error) { // TODO: Check duplica
 
 	// Because only each implementation of iso8583.Unmarshaler know how many bytes it needs to consume
 	// and can potentially only know it while reading the field raw data; all currently un-read bytes
-	// are given to the fields which return how many bytes from the message it consumed, value that is
-	// subtracted from unconsumedBytes.
-	unconsumedBytes := make([]byte, len(data))
-	copy(unconsumedBytes, data)
-
-	// consumed returns the amount of consumed bytes
-	consumed := func() int {
-		return len(data) - len(unconsumedBytes)
-	}
-
-	// consume reduces unconsumedBytes by the indicated amount with pointer safety.
-	consume := func(m int, f string) error {
-		if m > len(unconsumedBytes) {
-			// This error can only be caused by bad unmarshal implementations
-			return fmt.Errorf("iso8583.unmarshal: Unmarshaler from field %s returned a n higher than unconsumed "+
-				"bytes", f)
-		}
-		unconsumedBytes = unconsumedBytes[m:]
-		return nil
-	}
-
-	// mustLen returns the capacity of a field ignoring all possible errors.
-	mustLen := func(f string) int {
-		_, tag, _ := getUnmarshaler(input, f)
-		l, _ := tag.lenINT()
-		return l
-	}
+	// are given to the fields which return how many bytes from the message it consumed.
+	buffer := newUnmarshalBuffer(data)
 
 	// Only pointer to structs can be unmarshaled.
-	if !isPointerToStruct(input) {
-		return consumed(), errors.New("iso8583.unmarshal: interface input is not a pointer to a structure")
+	if !isPointerToStruct(strctInput) {
+		return buffer.UntilNowConsumed(), errors.New("iso8583.unmarshal: interface input is not a pointer to a structure")
 	}
 
-	// Unmarshal MTI.
-	m, err := unmarshalField(input, _tagMTI, unconsumedBytes)
+	representativeBits, err := readMessageHeader(buffer, strctInput)
 	if err != nil {
-		return consumed(), err
+		return buffer.UntilNowConsumed(), err
 	}
 
-	if err := consume(m, _tagMTI); err != nil {
-		return consumed(), err
-	}
-
-	// Unmarshal first bitmap.
-	m, err = unmarshalField(input, _tagBITMAP, unconsumedBytes)
-	if err != nil {
-		return consumed(), err
-	}
-
-	if err := consume(m, _tagBITMAP); err != nil {
-		return consumed(), err
-	}
+	// Obtain the length tag from first bitmap to know how many
+	// fields presences are indicated by him.
+	bitmapN += representativeBits
 
 	// Get Bits method from first bitmap type to know which fields
 	// to expect.
-	firstFieldsMethod, err := getBitsMethod(input, _tagBITMAP)
+	firstFieldsMethod, err := getBitsMethod(strctInput, _tagBITMAP)
 	if err != nil {
-		return consumed(), err
+		return buffer.UntilNowConsumed(), err
 	}
 
 	// Execute Bits method.
 	firstFieldsList, err := firstFieldsMethod()
 	if err != nil {
-		return consumed(), fmt.Errorf("iso8583.unmarshal: failed reading first bitmap: %w", err)
+		return buffer.UntilNowConsumed(), fmt.Errorf("iso8583.unmarshal: failed reading first bitmap: %w", err)
 	}
-
-	// Obtain the length tag from first bitmap to know how many
-	// fields presences are indicated by him.
-	// These operation are safe because there were executed during unmarshaling.
-	bitmapN += mustLen(_tagBITMAP)
 
 	// This block is needed because if we use the original "firstFieldList" variable, we would copy only the reference
 	// to the map and modify the value of the "bitmap" field.
@@ -157,21 +118,21 @@ func Unmarshal(data []byte, v interface{}) (int, error) { // TODO: Check duplica
 		}
 
 		// Unmarshal current field.
-		m, err := unmarshalField(input, strconv.Itoa(n), unconsumedBytes)
+		m, tagValues, err := unmarshalField(strctInput, strconv.Itoa(n), buffer.Bytes())
 		if err != nil {
-			return consumed(), err
+			return buffer.UntilNowConsumed(), err
 		}
 
-		if err := consume(m, "struct "+strconv.Itoa(n)); err != nil {
-			return consumed(), err
+		if err := buffer.IncrementConsumedCounter(m, "struct "+strconv.Itoa(n)); err != nil {
+			return buffer.UntilNowConsumed(), err
 		}
 
 		// Check if current field is a bitmap.
-		if bitsMethod, err := getBitsMethod(input, strconv.Itoa(n)); bitsMethod != nil && err == nil {
+		if bitsMethod, err := getBitsMethod(strctInput, strconv.Itoa(n)); bitsMethod != nil && err == nil {
 			// If bits method is present current field is a bitmap and the method is executed.
 			fieldsListExpansion, err := bitsMethod()
 			if err != nil {
-				return consumed(), fmt.Errorf("iso8583.unmarshal: failed reading field %v bitmap: %w", n, err)
+				return buffer.UntilNowConsumed(), fmt.Errorf("iso8583.unmarshal: failed reading field %v bitmap: %w", n, err)
 			}
 
 			// Expand current field list with obtained information from current field.
@@ -179,42 +140,108 @@ func Unmarshal(data []byte, v interface{}) (int, error) { // TODO: Check duplica
 
 			// Obtain the length tag from first bitmap to know how many
 			// fields presences are indicated by him.
-			// These operation are safe because there were executed during unmarshaling.
 			// The value is added to index of mapped fields.
-			bitmapN += mustLen(strconv.Itoa(n))
+			bitmapN += tagValues.Length
 		}
 	}
 
 	// Return the amount of consumed fields.
-	return consumed(), nil
+	return buffer.UntilNowConsumed(), nil
 }
 
-// unmarshalField and save the value. Returns the amount of consumed bytes.
-func unmarshalField(strct reflect.Value, fieldName string, bytes []byte) (int, error) {
-	fieldInterface, tag, err := getUnmarshaler(strct, fieldName)
+type unmarshalBuffer struct {
+	data        []byte
+	placeholder int
+}
+
+func newUnmarshalBuffer(data []byte) *unmarshalBuffer {
+	buffer := unmarshalBuffer{data: make([]byte, len(data))}
+	copy(buffer.data, data)
+	return &buffer
+}
+
+// incrementConsumed increments the placeholder considering the data length.
+func (buffer *unmarshalBuffer) IncrementConsumedCounter(n int, fieldName string) error {
+	if len(buffer.data[buffer.placeholder:]) < n {
+		// This error can only be caused by bad unmarshal implementations
+		return fmt.Errorf("iso8583.unmarshal: Unmarshaler from field %s returned a n higher than unconsumed "+
+			"bytes", fieldName)
+	}
+
+	buffer.placeholder += n
+	return nil
+}
+
+// UntilNowConsumed returns the amount of until now consumed bytes
+func (buffer *unmarshalBuffer) UntilNowConsumed() int { return buffer.placeholder }
+
+// Bytes returns a copy from the input data bytes remainder.
+func (buffer *unmarshalBuffer) Bytes() []byte {
+	data := make([]byte, len(buffer.data[buffer.placeholder:]))
+	copy(data, buffer.data[buffer.placeholder:])
+	return data
+}
+
+// readMessageHeader reads the message MTI and the first bitmap.
+// Returns the amount of representative bits of the bitmap.
+func readMessageHeader(buffer *unmarshalBuffer, strct reflect.Value) (int, error) {
+	// Unmarshal MTI.
+	consumed, _, err := unmarshalField(strct, _tagMTI, buffer.Bytes())
 	if err != nil {
 		return 0, err
 	}
 
-	if fieldInterface == nil {
-		return 0, fmt.Errorf("iso8583.unmarshal: unknown field in message '%v', cant resolve upcomming fields",
-			fieldName)
+	if err := buffer.IncrementConsumedCounter(consumed, _tagMTI); err != nil {
+		return 0, err
 	}
 
-	return executeUnmarshal(fieldInterface, bytes, *tag)
+	return readFirstBitmap(buffer, strct)
+}
+
+// readFirstBitmap reads the first bitmap and returns the amount of representative bits.
+func readFirstBitmap(buffer *unmarshalBuffer, strct reflect.Value) (int, error) {
+	// Unmarshal first bitmap.
+	consumed, tagValues, err := unmarshalField(strct, _tagBITMAP, buffer.Bytes())
+	if err != nil {
+		return 0, err
+	}
+
+	if err := buffer.IncrementConsumedCounter(consumed, _tagBITMAP); err != nil {
+		return 0, err
+	}
+
+	return tagValues.Length, nil
+}
+
+// unmarshalField and save the value. Returns the amount of consumed bytes.
+func unmarshalField(strct reflect.Value, fieldName string, bytes []byte) (int, tags, error) {
+	fieldValue, tag, err := searchStructField(strct, fieldName)
+	if err != nil {
+		if errors.Is(err, errStructFieldNonExistent) {
+			err = fmt.Errorf("unknown field in message '%v', cant resolve upcomming fields",
+				fieldName)
+		}
+
+		return 0, tags{}, fmt.Errorf("iso8583.unmarshal: %w", err)
+	}
+
+	// founded field must implement Unmarshaler, otherwise an error is returned.
+	fieldInterface, isValidUnmarshaler := fieldValue.Interface().(Unmarshaler)
+	if !isValidUnmarshaler {
+		return 0, tags{}, fmt.Errorf(
+			"iso8583.unmarshal: field %s is present but does not implement Unmarshaler interface", fieldName)
+	}
+
+	consumed, err := executeUnmarshal(fieldInterface, bytes, tag)
+
+	return consumed, tag, err
 }
 
 // executeUnmarshal calls unmarshal method of objective, obtaining parameters from tags.
 // Returns consumed bytes from implementation.
 func executeUnmarshal(field Unmarshaler, b []byte, tag tags) (int, error) {
-	// Transform length from string to int type.
-	length, err := tag.lenINT()
-	if err != nil {
-		return 0, err
-	}
-
 	// Execute unmarshal.
-	n, err := field.UnmarshalISO8583(b, length, tag.Encoding)
+	n, err := field.UnmarshalISO8583(b, tag.Length, tag.Encoding)
 	if err != nil {
 		return 0, fmt.Errorf("iso8583.unmarshal: cant unmarshal field %v: %w", tag.Field, err)
 	}
@@ -223,11 +250,12 @@ func executeUnmarshal(field Unmarshaler, b []byte, tag tags) (int, error) {
 	return n, nil
 }
 
-// getUnmarshaler iterates over target struct until it finds a field that matches with the field name.
-// If field is not found all values are returned in nil.
-func getUnmarshaler(v reflect.Value, n string) (Unmarshaler, *tags, error) {
+// Returns the reflect value of the indicated field with its tags.
+// If v isn't a struct this function panics.
+// Returns errStructFieldNonExistent if the field is non existing.
+func searchStructField(v reflect.Value, n string) (reflect.Value, tags, error) {
 	var strct reflect.Value
-	var tag *tags
+	var tag tags
 
 	// Obtain underlying struct.
 	for strct = v; strct.Kind() == reflect.Ptr; {
@@ -237,44 +265,48 @@ func getUnmarshaler(v reflect.Value, n string) (Unmarshaler, *tags, error) {
 	// Iterate over struct until a field match with the tag name.
 	var vField reflect.Value
 	for index, strctType := 0, strct.Type(); index < strctType.NumField(); index++ {
-		if tags := readTags(strctType.Field(index).Tag); tags != nil && tags.Field == n {
+		if structFieldValue, structFieldTags, err := getStructFieldData(strct, index); structFieldTags.Field == n {
+			if err != nil {
+				return reflect.Value{}, tags{}, err
+			}
+
 			if !reflect.ValueOf(vField).IsZero() {
-				return nil, nil, fmt.Errorf("iso8583.marshal: field %v is repeteated in struct", n)
+				return reflect.Value{}, tags{}, fmt.Errorf("field %v is repeteated in struct", n)
 			}
 
-			vField = strct.Field(index)
-			if vField.Kind() != reflect.Ptr {
-				vField = vField.Addr()
+			if structFieldValue.Kind() != reflect.Ptr {
+				structFieldValue = structFieldValue.Addr()
 			}
 
-			tag = tags
+			vField = structFieldValue
+			tag = structFieldTags
 		}
 	}
 
 	// If field is not found all values are returned nil.
 	if reflect.ValueOf(vField).IsZero() {
 		// Field not in struct
-		return nil, nil, nil
+		return reflect.Value{}, tags{}, errStructFieldNonExistent
 	}
 
-	// founded field must implement Unmarshaler, otherwise an error is returned.
-	field, isValidUnmarshaler := vField.Interface().(Unmarshaler)
-	if !isValidUnmarshaler {
-		return nil, nil, fmt.Errorf(
-			"iso8583.unmarshal: %s is present and its a struct but does not implement Unmarshaler interface", n)
-	}
+	return vField, tag, nil
+}
 
-	// Return field data.
-	return field, tag, nil
+// getStructFieldData returns the specified struct field data using the struct index.
+func getStructFieldData(parentStructValue reflect.Value, index int) (reflect.Value, tags, error) {
+	// search tags from current field, if there aren't field is ignored.
+	tags, err := searchTags(parentStructValue.Type().Field(index))
+
+	return parentStructValue.Field(index), tags, err
 }
 
 // getBitsMethod searches a iso8583.UnmarshalerBitmap implementation and returns it Bits method.
 func getBitsMethod(strct reflect.Value, fieldName string) (func() (map[int]bool, error), error) {
 	// Reuse getUnmarshaler because iso8583.Unmarshaler contains iso8583.UnmarshalerBitmap
-	bitmapUnmarshaler, _, _ := getUnmarshaler(strct, fieldName)
+	bitmapUnmarshaler, _, _ := searchStructField(strct, fieldName)
 
 	// Field must implement iso8583.UnmarshalerBitmap.
-	bitmap, ok := bitmapUnmarshaler.(UnmarshalerBitmap)
+	bitmap, ok := bitmapUnmarshaler.Interface().(UnmarshalerBitmap)
 	if !ok {
 		return nil, fmt.Errorf("iso8583.unmarshal: %s field is present but does not implement UnmarshalerBitmap",
 			fieldName)
@@ -285,7 +317,12 @@ func getBitsMethod(strct reflect.Value, fieldName string) (func() (map[int]bool,
 }
 
 func isPointerToStruct(v reflect.Value) bool {
-	return v.Kind() == reflect.Ptr && v.Elem().Kind() == reflect.Struct
+	underlyingObj := v
+	for underlyingObj.Kind() == reflect.Ptr {
+		underlyingObj = underlyingObj.Elem()
+	}
+
+	return v.Kind() == reflect.Ptr && underlyingObj.Kind() == reflect.Struct
 }
 
 func expandFieldList(list map[int]bool, expansion map[int]bool, bitmapN int) map[int]bool {

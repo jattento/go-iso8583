@@ -24,7 +24,7 @@ func TestUnmarshal(t *testing.T) {
 		ExpectedRemaining    int
 	}{
 		{
-			Name:              "simple_one_field",
+			Name:              "simple_one_field_and_private_one_and_disesteem",
 			Run:               true,
 			ExpectedRemaining: 0,
 			InputByte: append([]byte("1000"), append(bitmap.ToBytes(map[int]bool{1: false, 2: true, 64: false}),
@@ -33,12 +33,14 @@ func TestUnmarshal(t *testing.T) {
 				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
+				field3 iso8583.VAR    `iso8583:"3,length:3"`
 			}{},
 			ExpectedOutputError: "",
 			ExpectedOutputStruct: struct {
 				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
+				field3 iso8583.VAR    `iso8583:"3,length:3"`
 			}{
 				Field2: "asd",
 				Bitmap: iso8583.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false,
@@ -172,7 +174,7 @@ func TestUnmarshal(t *testing.T) {
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 			}{},
-			ExpectedOutputError:  "iso8583.marshal: field mti does not have a valid length",
+			ExpectedOutputError:  "iso8583.unmarshal: field mti: invalid length: strconv.Atoi: parsing \"a\": invalid syntax",
 			ExpectedOutputStruct: nil,
 		},
 		{
@@ -187,7 +189,7 @@ func TestUnmarshal(t *testing.T) {
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 				Field3 iso8583.VAR    `iso8583:"2,length:3"`
 			}{},
-			ExpectedOutputError:  "iso8583.marshal: field 2 is repeteated in struct",
+			ExpectedOutputError:  "iso8583.unmarshal: field 2 is repeteated in struct",
 			ExpectedOutputStruct: nil,
 		},
 		{
@@ -313,7 +315,7 @@ func TestUnmarshal(t *testing.T) {
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				Field1 uint8          `iso8583:"2,length:3"`
 			}{},
-			ExpectedOutputError:  "iso8583.unmarshal: 2 is present and its a struct but does not implement Unmarshaler interface",
+			ExpectedOutputError:  "iso8583.unmarshal: field 2 is present but does not implement Unmarshaler interface",
 			ExpectedOutputStruct: nil,
 		},
 		{
