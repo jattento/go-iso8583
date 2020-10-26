@@ -1,7 +1,7 @@
 ### Required tools
-GOTOOLS_CHECK = golangci-lint
+GOTOOLS_CHECK = go golangci-lint
 
-all: fmt ensure-deps linter test
+all: ensure-deps linter test
 
 ### Testing
 test:
@@ -13,10 +13,6 @@ test-cover:
 
 test-integration:
 	go test -tags integration ./... -covermode=atomic -coverpkg=./... -count=1 -race
-
-### Formatting, linting, and deps
-fmt:
-	go fmt ./...
 
 ensure-deps:
 	@echo "==> Running go mod tidy"
@@ -30,4 +26,4 @@ linter:
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: check_tools test test-cover fmt linter ensure-deps
+.PHONY: all check_tools test test-cover linter ensure-deps

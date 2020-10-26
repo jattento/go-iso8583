@@ -1,6 +1,10 @@
 [![codecov](https://codecov.io/gh/jattento/go-iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/jattento/go-iso8583)
-[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)
 
+| Version   |      Build      |
+|----------|:-------------:|
+| Go 1.15 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
+| Go 1.14 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
+| Go 1.13 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 # go-iso8583
 
 An easy to use, yet flexible marshaler for ISO-8583.
