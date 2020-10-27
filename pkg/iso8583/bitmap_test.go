@@ -27,6 +27,17 @@ func TestBITMAP_MarshalISO8583(t *testing.T) {
 func TestBITMAP_UnmarshalISO8583_nil_input(t *testing.T) {
 	var bmap iso8583.BITMAP
 
+	n, bmapErr := bmap.UnmarshalISO8583([]byte{1, 1, 1}, 64, "ascii")
+
+	assert.Equal(t, 0, n)
+	if assert.NotNil(t, bmapErr) {
+		assert.Equal(t, bmapErr.Error(), "bitmap should be 8 bytes long but only 3 bytes are avaiable")
+	}
+}
+
+func TestBITMAP_UnmarshalISO8583_too_short_input(t *testing.T) {
+	var bmap iso8583.BITMAP
+
 	n, bmapErr := bmap.UnmarshalISO8583(nil, 64, "ascii")
 
 	assert.Equal(t, 0, n)
