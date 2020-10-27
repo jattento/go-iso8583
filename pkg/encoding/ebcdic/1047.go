@@ -1,5 +1,6 @@
 package ebcdic
 
+// V1047 version of EBCDIC encoding
 var V1047 = version{entries: []entry{
 	{0x00, 0x00, 0x0},  // "NULL"
 	{0x01, 0x01, 0x0},  // "START OF HEADING"

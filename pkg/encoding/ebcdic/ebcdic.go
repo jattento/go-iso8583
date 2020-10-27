@@ -14,6 +14,7 @@ type entry struct {
 	representation rune
 }
 
+// NULL is used for invalid encoding conversions.
 const NULL = 0x0
 
 // FromGoString converts a string to ebcdic bytes.
@@ -37,7 +38,7 @@ func (v *version) FromGoString(s string) []byte {
 	return output
 }
 
-// FromGoString converts a ebcdic bytes to a string.
+// ToGoString converts a ebcdic bytes to a string.
 func (v *version) ToGoString(b []byte) string {
 	if len(v.decoding) == 0 {
 		v.generateDecodingMap()
