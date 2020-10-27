@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/jattento/go-iso8583/pkg/bitmap"
@@ -22,6 +23,11 @@ func (b *BITMAP) UnmarshalISO8583(byt []byte, length int, encoding string) (int,
 	}
 
 	bcap := int(math.Ceil(float64(length) / float64(bitsInByte)))
+
+	if len(byt) < bcap {
+		return 0, fmt.Errorf("bitmap should be %v bytes long but only %v bytes are avaiable", bcap, len(byt))
+	}
+
 	b.Bitmap = bitmap.FromBytes(byt[:bcap])
 	return bcap, nil
 }
