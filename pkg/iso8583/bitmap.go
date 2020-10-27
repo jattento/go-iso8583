@@ -31,7 +31,7 @@ func (b BITMAP) MarshalISO8583(length int, encoding string) ([]byte, error) {
 	return bitmap.ToBytes(b.Bitmap), nil
 }
 
-// Returns which bits are on, key values are between 1 and 64, both included.
+// Bits returns which bits are on, key values are between 1 and 64, both included.
 // First value is bit 1.
 func (b BITMAP) Bits() (map[int]bool, error) {
 	return b.Bitmap, nil

@@ -6,6 +6,7 @@ import (
 	"math"
 )
 
+// Bitmap is a alias for map[int]bool used for better code reading.
 type Bitmap = map[int]bool
 
 const (
@@ -18,10 +19,13 @@ const (
 )
 
 var (
-	// Errors...
-	ErrBitmapISOWrongLength        = errors.New("wrong bitmap length input")
-	ErrBitmapISOBadBitmapPosition  = errors.New("bad bitmap position input")
-	ErrBitmapISOImpossibleBitmap   = errors.New("impossible generate bitmap, lowest and highest limits too far")
+	// ErrBitmapISOWrongLength exported error for asserting.
+	ErrBitmapISOWrongLength = errors.New("wrong bitmap length input")
+	// ErrBitmapISOBadBitmapPosition exported error for asserting.
+	ErrBitmapISOBadBitmapPosition = errors.New("bad bitmap position input")
+	// ErrBitmapISOImpossibleBitmap exported error for asserting.
+	ErrBitmapISOImpossibleBitmap = errors.New("impossible generate bitmap, lowest and highest limits too far")
+	// ErrBitmapISOFirstBitProhibited exported error for asserting.
 	ErrBitmapISOFirstBitProhibited = errors.New("first bit can be setted manually in input")
 )
 
@@ -137,6 +141,7 @@ func setBit(n byte, pos uint) byte {
 	return n
 }
 
+// Extremities returns the lowest and highest elements of a bitmap.
 func Extremities(b Bitmap) (low, high int) {
 	firstIteration := true
 	for k := range b {

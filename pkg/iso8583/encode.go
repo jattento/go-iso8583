@@ -44,6 +44,7 @@ type Marshaler interface {
 // Omitempty tag does not affect MarshalerBitmap.
 // NOTE: This implementation is not a must in bitmaps.
 type MarshalerBitmap interface {
+	// MarshalISO8583Bitmap must consume b map information and return the corresponding byte slice.
 	// b should always represent which bits are on what not necessarily is equal to what fields are present.
 	// For example: In a traditional 8 byte bitmap. Te presence of field 65 would be represented in with bit 1 on.
 	// len(b) == length tag.

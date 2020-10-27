@@ -32,7 +32,7 @@ type Unmarshaler interface {
 	UnmarshalISO8583(b []byte, length int, encoding string) (n int, err error)
 }
 
-// Unmarshaler interface for iso8583 bitmaps.
+// UnmarshalerBitmap is the unmarshaler interface for iso8583 bitmaps.
 //
 // Length tag: It indicates the amount of representative bits contained
 // by the bitmap. For example in a classic 8 byte bitmap it would be 64,
@@ -160,7 +160,7 @@ func newUnmarshalBuffer(data []byte) *unmarshalBuffer {
 	return &buffer
 }
 
-// incrementConsumed increments the placeholder considering the data length.
+// IncrementConsumedCounter increments the placeholder considering the data length.
 func (buffer *unmarshalBuffer) IncrementConsumedCounter(n int, fieldName string) error {
 	if len(buffer.data[buffer.placeholder:]) < n {
 		// This error can only be caused by bad unmarshal implementations

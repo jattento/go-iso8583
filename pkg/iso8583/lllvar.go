@@ -4,7 +4,8 @@ import (
 	"errors"
 )
 
-// LLLVAR: For use of different encoding for 'LLL' and 'VAR' separate both encodings with a slash,
+// LLLVAR field type.
+// For use of different encoding for 'LLL' and 'VAR' separate both encodings with a slash,
 // where first element is the lll encoding and the second the var encoding.
 // For Unmarshal length indicate the amount of byte that contain the LLL value
 // For example:

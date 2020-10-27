@@ -1,7 +1,7 @@
 ### Required tools
 GOTOOLS_CHECK = go golangci-lint
 
-all: ensure-deps linter test
+all: ensure-deps linter test gofmt
 
 ### Testing
 test:
@@ -23,7 +23,12 @@ linter:
 	@echo "==> Running linter"
 	golangci-lint run ./...
 
+gofmt:
+	@echo "==> Running go fmt"
+	go fmt ./...
+
+
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: all check_tools test test-cover linter ensure-deps
+.PHONY: all check_tools test test-cover linter ensure-deps gofmt

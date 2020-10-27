@@ -43,7 +43,7 @@ func TestUnmarshal(t *testing.T) {
 				field3 iso8583.VAR    `iso8583:"3,length:3"`
 			}{
 				Field2: "asd",
-				Bitmap: iso8583.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false,
+				Bitmap: iso8583.BITMAP{Bitmap: map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false,
 					7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false,
 					16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false,
 					25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false,
@@ -77,7 +77,7 @@ func TestUnmarshal(t *testing.T) {
 			}{
 				Field2:  "asd",
 				Field66: "fgh",
-				Field1: iso8583.BITMAP{map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false,
+				Field1: iso8583.BITMAP{Bitmap: map[int]bool{1: false, 2: true, 3: false, 4: false, 5: false, 6: false,
 					7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false,
 					16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false,
 					25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false,
@@ -85,7 +85,7 @@ func TestUnmarshal(t *testing.T) {
 					43: false, 44: false, 45: false, 46: false, 47: false, 48: false, 49: false, 50: false, 51: false,
 					52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false, 59: false, 60: false,
 					61: false, 62: false, 63: false, 64: false}},
-				Bitmap: iso8583.BITMAP{map[int]bool{1: true, 2: true, 3: false, 4: false, 5: false, 6: false,
+				Bitmap: iso8583.BITMAP{Bitmap: map[int]bool{1: true, 2: true, 3: false, 4: false, 5: false, 6: false,
 					7: false, 8: false, 9: false, 10: false, 11: false, 12: false, 13: false, 14: false, 15: false,
 					16: false, 17: false, 18: false, 19: false, 20: false, 21: false, 22: false, 23: false, 24: false,
 					25: false, 26: false, 27: false, 28: false, 29: false, 30: false, 31: false, 32: false, 33: false,
