@@ -14,7 +14,16 @@ type LLLVAR string
 
 // MarshalISO8583 allows to use this type in structs and be able tu iso8583.Marshal it.
 func (v LLLVAR) MarshalISO8583(length int, enc string) ([]byte, error) {
-	return lengthMarshal(3, string(v), enc)
+	content := []byte(v)
+
+	lllEncoding, varContent := ReadSplitEncodings(enc)
+
+	content, err := applyEncoding(content, varContent, MarshalEncodings)
+	if err != nil {
+		return nil, err
+	}
+
+	return LengthMarshal(3, content, lllEncoding)
 }
 
 // UnmarshalISO8583 allows to use this type in structs and be able tu iso8583.Unmarshal it.
@@ -23,7 +32,18 @@ func (v *LLLVAR) UnmarshalISO8583(b []byte, length int, enc string) (int, error)
 		return 0, errors.New("bytes input is nil")
 	}
 
-	str, n, err := lengthUnmarshal(3, b, length, enc)
-	*v = LLLVAR(str)
+	lllEncoding, varEncoding := ReadSplitEncodings(enc)
+
+	n, b, err := LengthUnmarshal(3, b, length, lllEncoding)
+	if err != nil {
+		return 0, err
+	}
+
+	b, err = applyEncoding(b, varEncoding, UnmarshalDecodings)
+	if err != nil {
+		return 0, err
+	}
+
+	*v = LLLVAR(b)
 	return n, err
 }

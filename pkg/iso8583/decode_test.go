@@ -104,7 +104,7 @@ func TestUnmarshal(t *testing.T) {
 				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
 				PAN                   iso8583.LLVAR  `iso8583:"2,length:2"`
-				ProcessingCode        iso8583.VAR    `iso8583:"3,length:4"`
+				ProcessingCode        iso8583.BINARY `iso8583:"3,length:4"`
 				Amount                iso8583.VAR    `iso8583:"4,length:7"`
 				ICC                   iso8583.LLLVAR `iso8583:"55,length:3"`
 				SettlementCode        iso8583.VAR    `iso8583:"66,length:1"`
@@ -116,7 +116,7 @@ func TestUnmarshal(t *testing.T) {
 				FirstBitmap           iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				SecondBitmap          iso8583.BITMAP `iso8583:"1,length:64"`
 				PAN                   iso8583.LLVAR  `iso8583:"2,length:2"`
-				ProcessingCode        iso8583.VAR    `iso8583:"3,length:4"`
+				ProcessingCode        iso8583.BINARY `iso8583:"3,length:4"`
 				Amount                iso8583.VAR    `iso8583:"4,length:7"`
 				ICC                   iso8583.LLLVAR `iso8583:"55,length:3"`
 				SettlementCode        iso8583.VAR    `iso8583:"66,length:1"`
@@ -141,7 +141,7 @@ func TestUnmarshal(t *testing.T) {
 					50: false, 51: false, 52: false, 53: false, 54: false, 55: false, 56: false, 57: false, 58: false,
 					59: false, 60: false, 61: false, 62: false, 63: false, 64: false}},
 				PAN:                   iso8583.LLVAR("1234567891234567"),
-				ProcessingCode:        iso8583.VAR("1000"),
+				ProcessingCode:        iso8583.BINARY("1000"),
 				Amount:                iso8583.VAR("0001000"),
 				ICC:                   iso8583.LLLVAR("ABCDEFGH123456789"),
 				SettlementCode:        iso8583.VAR("8"),

@@ -24,7 +24,7 @@ func TestBITMAP_MarshalISO8583(t *testing.T) {
 	assert.Nil(t, bmapErr)
 }
 
-func TestBITMAP_UnmarshalISO8583_nil_input(t *testing.T) {
+func TestBITMAP_UnmarshalISO8583_too_short_input(t *testing.T) {
 	var bmap iso8583.BITMAP
 
 	n, bmapErr := bmap.UnmarshalISO8583([]byte{1, 1, 1}, 64, "ascii")
@@ -35,7 +35,7 @@ func TestBITMAP_UnmarshalISO8583_nil_input(t *testing.T) {
 	}
 }
 
-func TestBITMAP_UnmarshalISO8583_too_short_input(t *testing.T) {
+func TestBITMAP_UnmarshalISO8583_nil_input(t *testing.T) {
 	var bmap iso8583.BITMAP
 
 	n, bmapErr := bmap.UnmarshalISO8583(nil, 64, "ascii")

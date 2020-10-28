@@ -53,12 +53,12 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_string_one_bytes",
 			Run:  true,
 			Input: struct {
-				MTI    string         `iso8583:"mti"`
+				MTI    iso8583.BINARY `iso8583:"mti"`
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
-				Field2 []byte         `iso8583:"2"`
+				Field2 iso8583.BINARY `iso8583:"2"`
 			}{
-				MTI:    "field1",
-				Field2: []byte("field2"),
+				MTI:    iso8583.BINARY("field1"),
+				Field2: iso8583.BINARY("field2"),
 			},
 			OutputError: "",
 			OutputBytes: appendBytes([]byte("field1"), []byte{0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, []byte("field2")),
@@ -67,12 +67,12 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_nil",
 			Run:  true,
 			Input: struct {
-				MTI    string         `iso8583:"mti"`
+				MTI    iso8583.BINARY `iso8583:"mti"`
 				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				Field1 *iso8583.VAR   `iso8583:"1"`
 				Field2 iso8583.VAR    `iso8583:"2"`
 			}{
-				MTI:    "1000",
+				MTI:    iso8583.BINARY("1000"),
 				Field1: nil,
 				Field2: "1000",
 			},
@@ -400,8 +400,7 @@ func TestMarshal(t *testing.T) {
 			}{
 				Field1: 'q',
 			},
-			OutputError: "iso8583.marshal: field mti does not implement Marshaler interface, is a string or slice of " +
-				"bytes but does have iso8583 tags",
+			OutputError: "iso8583.marshal: field mti does not implement Marshaler interface but does have iso8583 tags",
 			OutputBytes: nil,
 		},
 		{
