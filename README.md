@@ -1,5 +1,8 @@
 [![codecov](https://codecov.io/gh/jattento/go-iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/jattento/go-iso8583)
 [![Maintainability](https://api.codeclimate.com/v1/badges/94a2058a2b0823cf31be/maintainability)](https://codeclimate.com/github/jattento/go-iso8583/maintainability)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Last release](https://img.shields.io/github/v/release/jattento/go-iso8583?style=plastic)](https://github.com/jattento/go-iso8583/releases)
+
 
 | Version   |      Build      |
 |----------|:-------------:|
@@ -43,8 +46,8 @@ import "github.com/jattento/go-iso8583/pkg/iso8583"
 
 type exampleMessage struct {
 	MessageTypeIdentifier                     iso8583.MTI       `iso8583:"mti,length:4,encoding:ebcdic"`
-	Bitmap                                    iso8583.BITMAP    `iso8583:"bitmap,length:64"`
-	SecondaryBitmap                           iso8583.BITMAP    `iso8583:"1,length:64,encoding:ebcdic,omitempty"`
+	Bitmap                                    iso8583.BITMAP    `iso8583:"bitmap"`
+	SecondaryBitmap                           iso8583.BITMAP    `iso8583:"1,omitempty"`
 	PrimaryAccountNumber                      iso8583.LLVAR     `iso8583:"2,length:64,encoding:ebcdic,omitempty"`
 	ProcessingCode                            iso8583.VAR       `iso8583:"3,length:6,encoding:ebcdic,omitempty"` 
 	AmountTransaction                         iso8583.VAR       `iso8583:"4,length:12,encoding:ebcdic,omitempty"`
@@ -67,6 +70,7 @@ type exampleMessage struct {
 	SecurityRelatedControlInformation         iso8583.VAR       `iso8583:"53,length:16,encoding:ebcdic,omitempty"`
 	AdditionalAmounts                         iso8583.LLLVAR    `iso8583:"54,length:120,encoding:ebcdic,omitempty"`
 	IntegratedCircuitCardSystemRelatedData    iso8583.LLLBINARY `iso8583:"55,length:999,encoding:ebcdic,omitempty"`
+    MessageSecurityCode                       iso8583.VAR       `iso8583:"96,length:8,encoding:ebcdic,omitempty"`
 }
 ```
 

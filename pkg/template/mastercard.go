@@ -7,8 +7,8 @@ import (
 // MasterCardISO87 is a template of the communication settings used for MasterCard connectivity on ISO8583 on 1987 version.
 type MasterCardISO87 struct {
 	MessageTypeIdentifier                     iso8583.MTI       `iso8583:"mti,length:4,encoding:ebcdic"`
-	Bitmap                                    iso8583.BITMAP    `iso8583:"bitmap,length:64"`
-	SecondaryBitmap                           iso8583.BITMAP    `iso8583:"1,length:64,encoding:ebcdic,omitempty"`
+	Bitmap                                    iso8583.BITMAP    `iso8583:"bitmap"`
+	SecondaryBitmap                           iso8583.BITMAP    `iso8583:"1,omitempty"`
 	PrimaryAccountNumber                      iso8583.LLVAR     `iso8583:"2,length:64,encoding:ebcdic,omitempty"`
 	ProcessingCode                            iso8583.VAR       `iso8583:"3,length:6,encoding:ebcdic,omitempty"`
 	AmountTransaction                         iso8583.VAR       `iso8583:"4,length:12,encoding:ebcdic,omitempty"`
