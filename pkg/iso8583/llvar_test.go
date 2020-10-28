@@ -46,7 +46,7 @@ func TestLLVAR_MarshalISO8583(t *testing.T) {
 		{
 			Name:        "ll_encoding_error",
 			V:           "11111",
-			Encoding:    "force_error",
+			Encoding:    "force_error/ascii",
 			OutputError: "forced_error",
 			OutputBytes: nil,
 		},
@@ -68,7 +68,7 @@ func TestLLVAR_MarshalISO8583(t *testing.T) {
 	defer delete(iso8583.MarshalEncodings, "force_error")
 
 	for _, testCase := range testList {
-		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("llvar_to_bytes_%s", testCase.Name), func(t *testing.T) {
 			o, err := testCase.V.MarshalISO8583(testCase.Length, testCase.Encoding)
 			if testCase.OutputError != "" {
 				assert.Errorf(t, err, testCase.OutputError)
@@ -170,12 +170,12 @@ func TestLLVAR_UnmarshalISO8583(t *testing.T) {
 		if string(bytes) != "1" {
 			return nil, errors.New("forced_error")
 		}
-		return iso8583.MarshalEncodings["ascii"](bytes)
+		return iso8583.UnmarshalDecodings["ascii"](bytes)
 	}
 	defer delete(iso8583.UnmarshalDecodings, "force_error")
 
 	for _, testCase := range testList {
-		t.Run(fmt.Sprintf("var_to_bytes_%s", testCase.Name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("llvar_to_bytes_%s", testCase.Name), func(t *testing.T) {
 			var v iso8583.LLVAR
 
 			n, err := v.UnmarshalISO8583(testCase.InputBytes, testCase.InputLength, testCase.InputEncoding)

@@ -124,28 +124,19 @@ func Marshal(v interface{}) ([]byte, error) {
 // resolveMarshalFieldValue resolves Marshal return value of a field that must not necessary be a marshaler.
 func resolveMarshalFieldValue(v reflect.Value, tag tags) ([]byte, error) {
 	marshaler, isMarshaler := v.Interface().(Marshaler)
-	isBytes := v.Kind() == reflect.Slice && v.Type() == reflect.TypeOf([]byte(nil))
-	isString := v.Kind() == reflect.String
 
 	// Priority of marshaling order is marshaler -> bytes -> string
-	switch {
-	case isMarshaler:
-		b, err := marshaler.MarshalISO8583(tag.Length, tag.Encoding)
-		if err != nil {
-			return nil, fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", tag.Field, err)
-		}
-		return b, nil
-	case isBytes:
-		return v.Bytes(), nil
-	case isString:
-		// ASCII assumed.
-		return []byte(v.String()), nil
+	if !isMarshaler {
+		return nil, fmt.Errorf("iso8583.marshal: field %s does not implement Marshaler interface "+
+			"but does have iso8583 tags", tag.Field)
 	}
 
-	// value does not implement marshal interface nether is a byte slice
-	return nil, fmt.Errorf("iso8583.marshal: field %s does not implement Marshaler interface, "+
-		"is a string or slice of bytes but does have iso8583 tags", tag.Field)
+	b, err := marshaler.MarshalISO8583(tag.Length, tag.Encoding)
+	if err != nil {
+		return nil, fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", tag.Field, err)
+	}
 
+	return b, nil
 }
 
 // isNil Checks the kind of the value since reflect.IsNil method could panic at some.

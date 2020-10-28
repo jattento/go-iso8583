@@ -22,7 +22,7 @@ func (v VAR) MarshalISO8583(length int, enc string) ([]byte, error) {
 	return content, nil
 }
 
-// UnmarshalISO8583 allows to use this type in structs and be able tu iso8583.Unmarshal it. //TODO CHECK LENGTH
+// UnmarshalISO8583 allows to use this type in structs and be able tu iso8583.Unmarshal it.
 func (v *VAR) UnmarshalISO8583(b []byte, length int, enc string) (int, error) {
 	if b == nil {
 		return 0, errors.New("bytes input is nil")
