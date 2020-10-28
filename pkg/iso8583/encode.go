@@ -261,10 +261,18 @@ func (m *marshalerMessage) resolveMarshalerBitmaps(fields *[]field) (bool, error
 
 	sortFieldsStable(m.Bitmaps, func(index int) string { return m.Bitmaps[index].Field })
 
+	// If bitmap length is not indicated: we assume its 64.
+	for n := 0; len(m.Bitmaps) > n; n++ {
+		if m.Bitmaps[n].tags.Length == 0 {
+			m.Bitmaps[n].tags.Length = 64
+		}
+	}
+
 	// Resolve all bitmaps starting from last one to first,
 	// this is because every bitmaps indicates the presence of the next one.
 	for n := len(m.Bitmaps) - 1; n >= 0; n-- {
 		// Marshal bitmap...
+
 		b, err := m.Bitmaps[n].MarshalerBitmap.MarshalISO8583Bitmap(m.createBitmapMarshalerInput(*fields, n), m.Bitmaps[n].tags.Encoding)
 		if err != nil {
 			return false, fmt.Errorf("iso8583.marshal: field %s cant be marshaled: %w", m.Bitmaps[n].tags.Field, err)

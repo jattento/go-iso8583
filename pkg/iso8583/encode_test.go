@@ -24,7 +24,7 @@ func TestMarshal(t *testing.T) {
 			Name: "simple_one_field_ebcdic",
 			Run:  true,
 			Input: struct {
-				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap"`
 				Field1 iso8583.VAR    `iso8583:"mti,encoding:ebcdic"`
 				Field2 iso8583.VAR    `iso8583:"1"`
 			}{
@@ -233,7 +233,7 @@ func TestMarshal(t *testing.T) {
 			Input: struct {
 				Bitmap   iso8583.BITMAP `iso8583:"bitmap,length:64"`
 				MTI      iso8583.VAR    `iso8583:"mti"`
-				Field1   iso8583.BITMAP `iso8583:"1,length:64"`
+				Field1   iso8583.BITMAP `iso8583:"1"`
 				Field2   iso8583.VAR    `iso8583:"2"`
 				Field32  iso8583.VAR    `iso8583:"32"`
 				Field64  iso8583.VAR    `iso8583:"64"`

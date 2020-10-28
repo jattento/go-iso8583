@@ -232,6 +232,11 @@ func unmarshalField(strct reflect.Value, fieldName string, bytes []byte) (int, t
 			"iso8583.unmarshal: field %s is present but does not implement Unmarshaler interface", fieldName)
 	}
 
+	// If bitmap length is not indicated: we assume its 64.
+	if _, isBitmap := fieldValue.Interface().(UnmarshalerBitmap); isBitmap && tag.Length == 0 {
+		tag.Length = 64
+	}
+
 	consumed, err := executeUnmarshal(fieldInterface, bytes, tag)
 
 	return consumed, tag, err

@@ -31,14 +31,14 @@ func TestUnmarshal(t *testing.T) {
 				[]byte("asd")...)...),
 			InputStruct: &struct {
 				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
-				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap"`
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 				field3 iso8583.VAR    `iso8583:"3,length:3"`
 			}{},
 			ExpectedOutputError: "",
 			ExpectedOutputStruct: struct {
 				Mti    iso8583.VAR    `iso8583:"mti,length:4"`
-				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap"`
 				Field2 iso8583.VAR    `iso8583:"2,length:3"`
 				field3 iso8583.VAR    `iso8583:"3,length:3"`
 			}{
@@ -62,7 +62,7 @@ func TestUnmarshal(t *testing.T) {
 				64: false}), bitmap.ToBytes(map[int]bool{1: false, 2: true, 64: false})...)...), []byte("asdfgh")...),
 			InputStruct: &struct {
 				Mti     iso8583.VAR    `iso8583:"mti,length:4"`
-				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap"`
 				Field1  iso8583.BITMAP `iso8583:"1,length:64"`
 				Field2  iso8583.VAR    `iso8583:"2,length:3"`
 				Field66 iso8583.VAR    `iso8583:"66,length:3"`
@@ -70,7 +70,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectedOutputError: "",
 			ExpectedOutputStruct: struct {
 				Mti     iso8583.VAR    `iso8583:"mti,length:4"`
-				Bitmap  iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap  iso8583.BITMAP `iso8583:"bitmap"`
 				Field1  iso8583.BITMAP `iso8583:"1,length:64"`
 				Field2  iso8583.VAR    `iso8583:"2,length:3"`
 				Field66 iso8583.VAR    `iso8583:"66,length:3"`
@@ -226,7 +226,7 @@ func TestUnmarshal(t *testing.T) {
 				[]byte("asd")...)...),
 			InputStruct: &struct {
 				MTI    VarMock        `iso8583:"mti,length:3"`
-				Bitmap iso8583.BITMAP `iso8583:"bitmap,length:64"`
+				Bitmap iso8583.BITMAP `iso8583:"bitmap"`
 			}{
 				MTI: VarMock{returnUnmarshal: 999},
 			},
