@@ -12,6 +12,8 @@
 | Go 1.13 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 # go-iso8583
 
+<img align="right" width="200px" src="https://raw.githubusercontent.com/jattento/go-iso8583-logo/main/iso%20gopher.png">
+
 An easy to use, yet flexible marshaler for ISO-8583.
 
 API [godoc](https://godoc.org/github.com/jattento/go-iso8583/pkg/iso8583) documentation.
