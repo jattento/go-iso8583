@@ -323,7 +323,7 @@ func getBitsMethod(strct reflect.Value, fieldName string) (func() (map[int]bool,
 
 func isPointerToStruct(v reflect.Value) bool {
 	underlyingObj := v
-	for underlyingObj.Kind() == reflect.Ptr {
+	for underlyingObj.Kind() == reflect.Ptr || underlyingObj.Kind() == reflect.Interface {
 		underlyingObj = underlyingObj.Elem()
 	}
 
