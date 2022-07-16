@@ -4,8 +4,10 @@
 [![Last release](https://img.shields.io/github/v/release/jattento/go-iso8583?style=plastic)](https://github.com/jattento/go-iso8583/releases)
 
 
-| Version   |      Build      |
-|----------|:-------------:|
+| Version |      Build      |
+|---------|:-------------:|
+| Go 1.18 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
+| Go 1.17 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.16 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.15 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.14 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
@@ -73,7 +75,7 @@ type exampleMessage struct {
 	SecurityRelatedControlInformation         iso8583.VAR       `iso8583:"53,length:16,encoding:ebcdic,omitempty"`
 	AdditionalAmounts                         iso8583.LLLVAR    `iso8583:"54,length:120,encoding:ebcdic,omitempty"`
 	IntegratedCircuitCardSystemRelatedData    iso8583.LLLBINARY `iso8583:"55,length:999,encoding:ebcdic,omitempty"`
-    MessageSecurityCode                       iso8583.VAR       `iso8583:"96,length:8,encoding:ebcdic,omitempty"`
+	MessageSecurityCode                       iso8583.VAR       `iso8583:"96,length:8,encoding:ebcdic,omitempty"`
 }
 ```
 
