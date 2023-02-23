@@ -6,6 +6,8 @@
 
 | Version |      Build      |
 |---------|:-------------:|
+| Go 1.20 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
+| Go 1.19 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.18 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.17 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
 | Go 1.16 |[![Build Status](https://travis-ci.com/jattento/go-iso8583.svg?branch=master)](https://travis-ci.com/jattento/go-iso8583)|
