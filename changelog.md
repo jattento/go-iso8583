@@ -1,5 +1,8 @@
 ## Changelog
 
+### 1.1.2 - 28/8/2020 - Jose Attento (jose.attento@gmail.com)
+- Modify CI files to include tests for newer versions of GO.
+
 ### 1.1.1 - 28/8/2020 - Jose Attento (jose.attento@gmail.com)
 - Add a default of 64 value for bitmaps length, the value is assumed if no length is indicated.
 
