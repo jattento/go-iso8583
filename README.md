@@ -1,19 +1,6 @@
 [![codecov](https://codecov.io/gh/jattento/go-iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/jattento/go-iso8583)
-[![Maintainability](https://api.codeclimate.com/v1/badges/94a2058a2b0823cf31be/maintainability)](https://codeclimate.com/github/jattento/go-iso8583/maintainability)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Last release](https://img.shields.io/github/v/release/jattento/go-iso8583?style=plastic)](https://github.com/jattento/go-iso8583/releases)
-
-
-| Version |                                                                             Build                                                                             |
-|---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| Go 1.19 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.18 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.17 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.16 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.15 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.14 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-| Go 1.13 | [![Build Status](https://github.com/jattento/go-iso8583/actions/workflows/go.yml/badge.svg)](https://github.com/jattento/go-iso8583/actions/workflows/go.yml) |
-# go-iso8583
 
 <img align="right" width="200px" src="https://raw.githubusercontent.com/jattento/go-iso8583-logo/main/iso%20gopher.png">
 
